@@ -2807,5 +2807,126 @@ body.mobile-mode .extra-npc-btn{padding:5px 7px;font-size:8px}
 })();
 </script>
 
+
+<style id="safezone-npc-update-v1">
+/* NPC đặc biệt chỉ xuất hiện khi người chơi đang ở Safe Zone */
+#extraNpcBar{
+  display:none;
+}
+#extraNpcBar.safezone-visible{
+  display:flex;
+}
+#safeZoneNpcHint{
+  position:absolute;
+  left:50%;
+  top:84px;
+  transform:translateX(-50%);
+  z-index:27;
+  display:none;
+  padding:5px 9px;
+  border-radius:5px;
+  border:1px solid rgba(90,220,130,.5);
+  background:rgba(20,80,40,.72);
+  color:#b8ffd0;
+  font-size:9px;
+  pointer-events:none;
+}
+#safeZoneNpcHint.show{
+  display:block;
+}
+body.mobile-mode #safeZoneNpcHint{
+  top:78px;
+  max-width:72vw;
+  text-align:center;
+}
+</style>
+
+<div id="safeZoneNpcHint">
+  NPC Safe Zone: Shop kiếm · Shop sức mạnh · Tân Bái Dán · anti vng · Equip đồ · Võ V3
+</div>
+
+<script id="safezone-npc-script-v1">
+(()=>{
+  'use strict';
+
+  const bar = document.getElementById('extraNpcBar');
+  const hint = document.getElementById('safeZoneNpcHint');
+
+  function addSafeZoneButton(id, label, modalId, message){
+    if(!bar || document.getElementById(id)) return;
+    const button = document.createElement('button');
+    button.className = 'extra-npc-btn';
+    button.id = id;
+    button.textContent = label;
+    bar.appendChild(button);
+    button.addEventListener('click', ()=>{
+      const modal = document.getElementById(modalId);
+      if(modal) modal.classList.add('show');
+      if(typeof showGameMsg === 'function') showGameMsg(message);
+    });
+  }
+
+  addSafeZoneButton('openSafeSwordShop', '⚔️ Shop kiếm', 'swordShopModal', 'Đã mở NPC bán kiếm REALNAH');
+  addSafeZoneButton('openSafePowerShop', '🔥 Shop sức mạnh', 'powerNpcModal', 'Đã mở NPC bán sức mạnh vip nướng');
+
+  if(bar && !document.getElementById('openV3Npc')){
+    const v3Button = document.createElement('button');
+    v3Button.className = 'extra-npc-btn';
+    v3Button.id = 'openV3Npc';
+    v3Button.textContent = '⚡ Võ V3';
+    bar.appendChild(v3Button);
+
+    v3Button.addEventListener('click', ()=>{
+      const modal = document.getElementById('v2NpcModal');
+      if(modal) modal.classList.add('show');
+      if(typeof showGameMsg === 'function'){
+        showGameMsg('Đã mở NPC nhiệm vụ Võ V2/V3');
+      }
+    });
+  }
+
+  function playerInAnySafeZone(){
+    try{
+      if(typeof playerObj === 'undefined' || !playerObj) return false;
+      if(typeof isInSafeZone === 'function'){
+        return !!isInSafeZone(playerObj.x, playerObj.y);
+      }
+    }catch(error){
+      console.warn('Safe Zone NPC check failed:', error);
+    }
+    return false;
+  }
+
+  function refreshSafeZoneNpcs(){
+    const inGame = document.getElementById('screen-game')?.classList.contains('active');
+    const visible = inGame && playerInAnySafeZone();
+
+    bar?.classList.toggle('safezone-visible', visible);
+    hint?.classList.toggle('show', visible);
+
+    if(!visible){
+      [
+        'swordShopModal',
+        'powerNpcModal',
+        'styleNpcModal',
+        'gachaNpcModal',
+        'equipNpcModal',
+        'v2NpcModal'
+      ].forEach(id=>{
+        document.getElementById(id)?.classList.remove('show');
+      });
+    }
+  }
+
+  setInterval(refreshSafeZoneNpcs, 180);
+
+  document.addEventListener('visibilitychange', ()=>{
+    if(!document.hidden) refreshSafeZoneNpcs();
+  });
+
+  refreshSafeZoneNpcs();
+})();
+</script>
+
 </body>
 </html>
