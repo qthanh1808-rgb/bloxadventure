@@ -2513,5 +2513,148 @@ body.mobile-mode .skill-panel{
 }
 </style>
 
+
+<script id="fix-v3-quest-v1">
+(()=>{
+  'use strict';
+
+  function msg(text){
+    if(typeof showGameMsg === 'function') showGameMsg(text);
+    else alert(text);
+  }
+
+  function getProgress(){
+    const p = typeof loadProgress === 'function' ? loadProgress() : {};
+    p.v3Quest ??= {accepted:false,startBoss:0};
+    p.fightingV3 ??= false;
+    return p;
+  }
+
+  function save(p){
+    if(typeof saveProgress === 'function') saveProgress(p);
+  }
+
+  function progressV3(p){
+    return p.v3Quest?.accepted
+      ? Math.max(0, (p.boss || 0) - (p.v3Quest.startBoss || 0))
+      : 0;
+  }
+
+  function refreshV3Text(){
+    const p = getProgress();
+    const text = document.getElementById('v2QuestText');
+    if(!text) return;
+
+    if(p.fightingV3){
+      text.textContent = 'Võ V3 đã mở khóa. Damage võ tăng 500%.';
+      return;
+    }
+
+    if(p.v3Quest.accepted){
+      text.textContent = 'Nhiệm vụ Võ V3: ' + Math.min(progressV3(p),25) + '/25 Boss.';
+      return;
+    }
+
+    if(p.fightingV2){
+      text.textContent = 'Bạn đã có Võ V2. Có thể nhận nhiệm vụ Võ V3: hạ 25 Boss.';
+    }
+  }
+
+  function replaceButton(id, handler){
+    const old = document.getElementById(id);
+    if(!old) return null;
+
+    const fresh = old.cloneNode(true);
+    old.replaceWith(fresh);
+
+    const run = (event)=>{
+      event.preventDefault();
+      event.stopPropagation();
+      handler();
+    };
+
+    fresh.addEventListener('click', run);
+    fresh.addEventListener('pointerup', (event)=>{
+      if(event.pointerType === 'touch') run(event);
+    });
+
+    return fresh;
+  }
+
+  replaceButton('acceptV3Quest', ()=>{
+    const p = getProgress();
+
+    if(!p.fightingV2){
+      msg('Bạn phải mở khóa Võ V2 trước.');
+      return;
+    }
+
+    if(p.fightingV3){
+      msg('Bạn đã có Võ V3.');
+      return;
+    }
+
+    if(p.v3Quest.accepted){
+      msg('Nhiệm vụ Võ V3 đã được nhận: ' + Math.min(progressV3(p),25) + '/25 Boss.');
+      refreshV3Text();
+      return;
+    }
+
+    p.v3Quest = {
+      accepted: true,
+      startBoss: Number(p.boss || 0)
+    };
+
+    save(p);
+    refreshV3Text();
+    msg('Đã nhận nhiệm vụ Võ V3: hạ 25 Boss.');
+  });
+
+  replaceButton('claimV3Quest', ()=>{
+    const p = getProgress();
+
+    if(p.fightingV3){
+      msg('Võ V3 đã được mở khóa.');
+      return;
+    }
+
+    if(!p.fightingV2){
+      msg('Bạn phải mở khóa Võ V2 trước.');
+      return;
+    }
+
+    if(!p.v3Quest.accepted){
+      msg('Hãy nhận nhiệm vụ Võ V3 trước.');
+      return;
+    }
+
+    const done = progressV3(p);
+    if(done < 25){
+      msg('Chưa đủ: ' + done + '/25 Boss.');
+      refreshV3Text();
+      return;
+    }
+
+    p.fightingV3 = true;
+    p.v3Quest.completed = true;
+    save(p);
+
+    if(typeof updateHUD === 'function') updateHUD();
+    refreshV3Text();
+    msg('Đã mở khóa Võ V3! Damage võ tăng 500%.');
+  });
+
+  const modal = document.getElementById('v2NpcModal');
+  if(modal){
+    const observer = new MutationObserver(()=>{
+      if(modal.classList.contains('show')) refreshV3Text();
+    });
+    observer.observe(modal,{attributes:true,attributeFilter:['class']});
+  }
+
+  refreshV3Text();
+})();
+</script>
+
 </body>
 </html>
