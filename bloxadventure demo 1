@@ -3335,5 +3335,74 @@ body.mobile-mode #safeZoneNpcHint{
 })();
 </script>
 
+
+<style id="travel-fix-style">
+#boatNpcModal .npc-modal-box{max-height:88vh;overflow-y:auto;}
+#boatNpcModal .npc-choice-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+@media(max-width:600px){#boatNpcModal .npc-choice-grid{grid-template-columns:1fr;}}
+</style>
+<script id="travel-fix-final">
+(()=>{
+  const TRAVEL={
+    1:{id:'starter',need:1,name:'Đảo 1 — Đảo Khởi Đầu'},
+    2:{id:'forest',need:25,name:'Đảo 2 — Đảo Rừng'},
+    3:{id:'void',need:40,name:'Đảo 3 — Đảo Hắc Tử'},
+    4:{id:'farm1',need:60,name:'Đảo 4 — Nghĩa Địa'},
+    5:{id:'farm2',need:80,name:'Đảo 5 — Thành Phố Đáy Biển'},
+    6:{id:'farm3',need:100,name:'Đảo 6 — Hắc Cửu Tử'},
+    7:{id:'farm4',need:125,name:'Đảo 7 — Đảo Trời'},
+    8:{id:'farm5',need:150,name:'Đảo 8 — TP Đáy Biển Tối'},
+    9:{id:'pvp',need:150,name:'Đảo 9 — Đấu Trường'}
+  };
+
+  function goIsland(num){
+    const cfg=TRAVEL[num];
+    if(!cfg)return;
+    const p=loadProgress();
+    const level=Number(p.level)||1;
+    if(level<cfg.need){
+      showGameMsg('Chưa đủ level! Cần Level '+cfg.need+' để tới '+cfg.name);
+      return;
+    }
+    const modal=document.getElementById('boatNpcModal');
+    if(modal)modal.classList.remove('show');
+
+    // Quan trọng: thoát dimension trước rồi mới tạo quái của đảo mới.
+    currentDimension='world';
+    if(typeof setDimension==='function')setDimension('world');
+    p.island=cfg.id;
+    saveProgress(p);
+    currentIsland=cfg.id;
+    enemies=[]; projectiles=[]; effects=[];
+    resetArena();
+    updateHUD();
+    showGameMsg('Đã tới '+cfg.name);
+  }
+
+  // Clone nút để xóa toàn bộ listener cũ bị xung đột.
+  for(let i=1;i<=9;i++){
+    const old=document.getElementById('boatGoIsland'+i);
+    if(!old)continue;
+    const fresh=old.cloneNode(true);
+    old.replaceWith(fresh);
+    fresh.addEventListener('click',e=>{
+      e.preventDefault();
+      e.stopPropagation();
+      goIsland(i);
+    });
+  }
+
+  // Khôi phục đúng đảo đã lưu khi vào game/reload.
+  const restore=()=>{
+    const p=loadProgress();
+    const valid=new Set(Object.values(TRAVEL).map(x=>x.id));
+    if(valid.has(p.island))currentIsland=p.island;
+    updateHUD();
+  };
+  setTimeout(restore,0);
+
+  window.goBloxIsland=goIsland;
+})();
+</script>
 </body>
 </html>
