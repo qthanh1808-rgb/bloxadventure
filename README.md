@@ -2994,5 +2994,150 @@ body.mobile-mode #safeZoneNpcHint{
 })();
 </script>
 
+
+<style id="trident-update-v1">
+#tridentCard{display:none}
+.trident-thumb{width:100%;height:125px;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle,#76eaff 0,#153b62 45%,#07111c 100%);border:1px solid #4baee8;border-radius:5px;margin-bottom:8px;font-size:72px;filter:drop-shadow(0 0 12px #42cfff)}
+.trident-fx-layer{position:absolute;inset:0;z-index:24;pointer-events:none;overflow:hidden}
+.trident-magic-circle{position:absolute;width:150px;height:150px;transform:translate(-50%,-50%);image-rendering:pixelated;filter:drop-shadow(0 0 18px #61dcff);animation:tridentSpin .22s linear infinite,tridentPulse 1s ease-in-out infinite}
+.trident-water-drop{position:absolute;width:34px;height:46px;transform:translate(-50%,-50%) rotate(45deg);border-radius:55% 55% 55% 10%;background:linear-gradient(135deg,#eaffff,#3ecfff 55%,#1264aa);box-shadow:0 0 20px #5ee8ff;animation:tridentDropSpin .35s linear infinite}
+.trident-dragon{position:absolute;transform:translate(-50%,-50%);font-size:62px;filter:hue-rotate(145deg) drop-shadow(0 0 16px #54dcff);transition:left .62s ease-in,top .62s ease-in,transform .62s linear}
+@keyframes tridentSpin{to{transform:translate(-50%,-50%) rotate(360deg)}}
+@keyframes tridentPulse{50%{width:178px;height:178px;opacity:.75}}
+@keyframes tridentDropSpin{to{transform:translate(-50%,-50%) rotate(405deg)}}
+</style>
+<script id="trident-script-v1">
+(()=>{
+  'use strict';
+  const TRIDENT_PRICE=500000;
+  const circleSrc='data:image/png;base64,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';
+  const shopList=document.querySelector('#swordShopModal .sword-list');
+  if(shopList&&!document.getElementById('tridentCard')){
+    shopList.insertAdjacentHTML('beforeend',`<div class="sword-item" id="tridentCard"><div class="trident-thumb">🔱</div><b>Trident</b><div style="font-size:10px;color:#88dfff;margin-top:4px">M1: 969 dame · 3 kỹ năng Thủy</div><button id="buyTridentBtn">Mua / Trang bị · ${TRIDENT_PRICE.toLocaleString('vi-VN')}</button></div>`);
+  }
+  const itemPanel=document.getElementById('itemPanel');
+  if(itemPanel&&!document.getElementById('itemTrident')) itemPanel.insertAdjacentHTML('beforeend','<div class="item-row">🔱 Trident: <b id="itemTrident">Chưa sở hữu</b></div>');
+  const shell=document.querySelector('.game-shell');
+  if(shell&&!document.getElementById('tridentFxLayer')) shell.insertAdjacentHTML('beforeend','<div class="trident-fx-layer" id="tridentFxLayer"></div>');
+
+  const oldLoadProgress=loadProgress;
+  loadProgress=function(){
+    const p=oldLoadProgress();
+    p.ownedSwords??={};
+    p.ownedSwords.trident??=false;
+    return p;
+  };
+
+  function isIsland3(){return currentIsland==='void'||loadProgress().island==='void'}
+  function refreshTridentShop(){
+    const card=document.getElementById('tridentCard');
+    if(card)card.style.display=isIsland3()?'block':'none';
+    const state=document.getElementById('itemTrident'),p=loadProgress();
+    if(state)state.textContent=p.ownedSwords.trident?(p.equippedWeapon==='trident'?'Đang trang bị':'Đã sở hữu'):'Chưa sở hữu';
+  }
+  const shopModal=document.getElementById('swordShopModal');
+  new MutationObserver(refreshTridentShop).observe(shopModal,{attributes:true,attributeFilter:['class']});
+
+  document.getElementById('buyTridentBtn')?.addEventListener('click',()=>{
+    const p=loadProgress();
+    if(!isIsland3()){showGameMsg('Trident chỉ được REALNAH bán ở Đảo 3');return}
+    if(!p.ownedSwords.trident){
+      if((p.money||0)<TRIDENT_PRICE){showGameMsg('Không đủ '+TRIDENT_PRICE.toLocaleString('vi-VN')+' tiền');return}
+      p.money-=TRIDENT_PRICE;p.ownedSwords.trident=true;
+      showGameMsg('Đã mua Trident từ REALNAH!');
+    }else showGameMsg('Đã trang bị Trident');
+    p.equippedWeapon='trident';saveProgress(p);updateHUD();shopModal?.classList.remove('show');
+  });
+
+  const oldEquippedSword=equippedSword;
+  equippedSword=function(){const p=loadProgress();if(p.equippedWeapon==='trident'&&p.ownedSwords.trident)return 'trident';return oldEquippedSword()};
+  const oldUsingSword=usingSword;
+  usingSword=function(){const p=loadProgress();return (p.equippedWeapon==='trident'&&p.ownedSwords.trident)||oldUsingSword()};
+
+  const oldToggle=toggleWeaponMode;
+  toggleWeaponMode=function(){
+    const p=loadProgress();
+    if(!p.ownedSwords.trident)return oldToggle();
+    const owned=[];
+    if(p.ownedSwords.iceBreathDragon)owned.push('iceBreathDragon');
+    if(p.ownedSwords.flameDragonBreath)owned.push('flameDragonBreath');
+    if(p.ownedSwords.goldKitana)owned.push('goldKitana');
+    if(p.ownedSwords.voidSword)owned.push('voidSword');
+    if(p.ownedSwords.dogBlade)owned.push('dogBlade');
+    owned.push('trident');
+    const cycle=['melee',...owned],i=cycle.indexOf(p.equippedWeapon);
+    p.equippedWeapon=cycle[(i+1)%cycle.length];saveProgress(p);skillCooldown={z:0,x:0,c:0};updateHUD();showGameMsg(p.equippedWeapon==='trident'?'Đã trang bị Trident':'Đã đổi vũ khí');
+  };
+
+  function layerPos(x,y){
+    const c=document.getElementById('gameCanvas'),layer=document.getElementById('tridentFxLayer');
+    if(!c||!layer)return {x,y};
+    return {x:x/c.width*c.clientWidth,y:y/c.height*c.clientHeight};
+  }
+  function addCircle(x,y,size=150,duration=1200){
+    const layer=document.getElementById('tridentFxLayer'),p=layerPos(x,y);if(!layer)return;
+    const el=document.createElement('img');el.src=circleSrc;el.className='trident-magic-circle';el.style.left=p.x+'px';el.style.top=p.y+'px';el.style.width=size+'px';el.style.height=size+'px';layer.appendChild(el);setTimeout(()=>el.remove(),duration);
+  }
+  function addDrop(x,y,duration=1100){const layer=document.getElementById('tridentFxLayer'),p=layerPos(x,y);if(!layer)return;const el=document.createElement('div');el.className='trident-water-drop';el.style.left=p.x+'px';el.style.top=p.y+'px';layer.appendChild(el);setTimeout(()=>el.remove(),duration)}
+  function addDragon(x,y,tx,ty){
+    const layer=document.getElementById('tridentFxLayer'),a=layerPos(x,y),b=layerPos(tx,ty);if(!layer)return;
+    const el=document.createElement('div');el.className='trident-dragon';el.textContent='🐉';el.style.left=a.x+'px';el.style.top=a.y+'px';layer.appendChild(el);
+    requestAnimationFrame(()=>{el.style.left=b.x+'px';el.style.top=b.y+'px';el.style.transform='translate(-50%,-50%) rotate(720deg) scale(1.35)'});setTimeout(()=>el.remove(),850);
+  }
+  function waterExplosion(x,y,size=220){effects.push({type:'iceBurst',x,y,life:1,max:1,size});effects.push({type:'iceRing',x,y,life:.8,max:.8,size:size*.8})}
+  function swordDmg(base){return Math.round(base*statMultiplier(loadProgress().stats.sword))}
+
+  const oldUseM1=useM1;
+  useM1=function(){
+    if(equippedSword()!=='trident')return oldUseM1();
+    if(isInSafeZone(playerObj.x,playerObj.y)){showGameMsg('Không thể tấn công trong Safe Zone');return}
+    const now=performance.now();if(now<m1Cooldown)return;m1Cooldown=now+360;
+    const t=nearestEnemy(95);effects.push({type:'iceRing',x:playerObj.x+playerObj.facingX*42,y:playerObj.y+playerObj.facingY*42,life:.25,max:.25,size:48});
+    if(t)damageEnemy(t,swordDmg(969));
+  };
+
+  const oldUseZ=useZ,oldUseX=useX,oldUseC=useC;
+  useZ=function(){
+    if(equippedSword()!=='trident')return oldUseZ();
+    if(!canUse('z',10,0,8000))return;
+    const cx=playerObj.x+playerObj.facingX*145,cy=playerObj.y+playerObj.facingY*145;
+    addCircle(cx,cy,145,1500);effects.push({type:'iceRing',x:cx,y:cy,life:1.45,max:1.45,size:180});
+    const caught=enemies.filter(e=>Math.hypot(e.x-cx,e.y-cy)<260);
+    let ticks=0;const spin=setInterval(()=>{ticks++;caught.forEach(e=>{if(!enemies.includes(e))return;const dx=cx-e.x,dy=cy-e.y;e.x+=dx*.22;e.y+=dy*.22;effects.push({type:'iceBurst',x:e.x,y:e.y,life:.16,max:.16,size:28})});if(ticks>=12)clearInterval(spin)},70);
+    setTimeout(()=>{caught.forEach(e=>{if(enemies.includes(e))damageEnemy(e,swordDmg(1500))});waterExplosion(cx,cy,230)},900);
+  };
+  useX=function(){
+    if(equippedSword()!=='trident')return oldUseX();
+    if(!canUse('x',0,0,14000))return;
+    const cx=playerObj.x+playerObj.facingX*165,cy=playerObj.y+playerObj.facingY*165;
+    addDrop(cx,cy,1450);addCircle(cx,cy,175,1450);
+    for(let i=0;i<14;i++)setTimeout(()=>effects.push({type:'iceRing',x:cx+Math.cos(i*.9)*70,y:cy+Math.sin(i*.9)*70,life:.35,max:.35,size:35}),i*55);
+    setTimeout(()=>{enemies.slice().forEach(e=>{if(Math.hypot(e.x-cx,e.y-cy)<220)damageEnemy(e,swordDmg(2500))});waterExplosion(cx,cy,280)},1050);
+  };
+  useC=function(){
+    if(equippedSword()!=='trident')return oldUseC();
+    if(!canUse('c',0,0,23000))return;
+    const t=nearestEnemy(800),tx=t?t.x:playerObj.x+playerObj.facingX*420,ty=t?t.y:playerObj.y+playerObj.facingY*420;
+    addCircle(playerObj.x,playerObj.y,210,1700);
+    setTimeout(()=>addDragon(playerObj.x,playerObj.y,tx,ty),650);
+    setTimeout(()=>{if(t&&enemies.includes(t))damageEnemy(t,swordDmg(4000));enemies.slice().forEach(e=>{if(e!==t&&Math.hypot(e.x-tx,e.y-ty)<170)damageEnemy(e,swordDmg(4000))});waterExplosion(tx,ty,340)},1320);
+  };
+
+  const oldHUD=updateHUD;
+  updateHUD=function(){
+    oldHUD();const p=loadProgress();refreshTridentShop();
+    if(p.equippedWeapon==='trident'&&p.ownedSwords.trident){
+      fightingStyleTitle.textContent='TRIDENT';
+      skillNameZ.innerHTML='Long Cung<br><small>1500 dame · cần hạ 10 quái</small>';
+      skillNameX.innerHTML='Thủy Cung Diệm Thổ<br><small>2500 dame · vòng nước xoay rồi nổ</small>';
+      skillNameC.innerHTML='Hải Long Trận<br><small>4000 dame · pháp trận + rồng nước</small>';
+      skillZ.classList.toggle('locked',(p.npc||0)<10);skillX.classList.remove('locked');skillC.classList.remove('locked');
+      if(m1Hint)m1Hint.textContent='M1 Trident: 969 dame';
+    }
+  };
+  refreshTridentShop();updateHUD();
+})();
+</script>
+
 </body>
 </html>
