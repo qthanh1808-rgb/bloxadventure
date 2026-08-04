@@ -1004,16 +1004,16 @@
     <div class="npc-modal" id="boatNpcModal">
       <div class="npc-modal-box">
         <div class="npc-modal-title">🚤 nexx8n — Người lái thuyền</div>
-        <div class="npc-modal-sub">Chọn đảo muốn đi. Đảo Rừng yêu cầu level 25.</div>
+        <div class="npc-modal-sub" id="nexx8nIslandDescription">Giữ Đảo 1–4. Đảo 4 yêu cầu Level 60.</div>
         <div class="npc-choice-grid">
           <button class="npc-choice" id="boatGoIsland1">Đảo 1<small>Đảo Khởi Đầu · quái và boss cũ</small></button>
           <button class="npc-choice" id="boatGoIsland2">Đảo 2<small>Đảo Rừng · Lv.25+</small></button>
-          <button class="npc-choice" id="boatGoIsland3">Đảo 3<small>Đảo Hắc Tử · khu vực mới</small></button><button class="npc-choice" id="boatGoIsland4">Đảo 4<small>Yêu cầu Lv.60 · +15% damage</small></button>
-<button class="npc-choice" id="boatGoIsland5">Đảo 5<small>Yêu cầu Lv.80 · +30% damage</small></button>
-<button class="npc-choice" id="boatGoIsland6">Đảo 6<small>Yêu cầu Lv.100 · +45% damage</small></button>
-<button class="npc-choice" id="boatGoIsland7">Đảo 7<small>Yêu cầu Lv.125 · +60% damage</small></button>
-<button class="npc-choice" id="boatGoIsland8">Đảo 8<small>Yêu cầu Lv.150 · +75% damage</small></button>
-<button class="npc-choice" id="boatGoIsland9">Đảo 9<small>Yêu cầu Lv.150 · PVP</small></button>
+          <button class="npc-choice" id="boatGoIsland3">Đảo 3<small>Đảo Hắc Tử · khu vực mới</small></button><button class="npc-choice" id="boatGoIsland4">Đảo 4 — ???<small>Yêu cầu Level 60 để mở khóa</small></button>
+
+
+
+
+
         </div>
         <button class="npc-modal-close" id="closeBoatNpc">Đóng</button>
       </div>
@@ -3136,6 +3136,661 @@ body.mobile-mode #safeZoneNpcHint{
     }
   };
   refreshTridentShop();updateHUD();
+})();
+</script>
+
+
+
+<!-- ===== PATCH ĐẢO 4-9 + ADMIN QUEST ===== -->
+<div class="npc-modal" id="adminNpcModal">
+  <div class="npc-modal-box" style="border-color:#36d8ff;box-shadow:0 0 35px rgba(40,210,255,.2)">
+    <div class="npc-modal-title">🛡️ admin — Thử thách Đảo 8</div>
+    <div class="npc-modal-sub" id="adminQuestText">Hạ 50 quái trên Đảo 8. Hoàn thành sẽ tự động dịch chuyển tới Dimension Admin.</div>
+    <div class="npc-choice-grid">
+      <button class="npc-choice" id="acceptAdminQuest">Nhận nhiệm vụ<small>Kill 50 quái Đảo 8</small></button>
+      <button class="npc-choice" id="enterAdminBoss">Vào đánh Boss Admin<small>Boss 60.000 HP · 600 damage</small></button>
+    </div>
+    <button class="npc-modal-close" id="closeAdminNpc">Đóng</button>
+  </div>
+</div>
+<script id="islands-admin-patch">
+(()=>{
+  const PATCH_INFO={
+    farm1:{name:'Đảo 4 — Nghĩa Địa',tier:1,need:60},
+    farm2:{name:'Đảo 5 — Thành Phố Đáy Biển',tier:2,need:80},
+    farm3:{name:'Đảo 6 — Hắc Cửu Tử',tier:3,need:100},
+    farm4:{name:'Đảo 7 — Đảo Trời',tier:4,need:125},
+    farm5:{name:'Đảo 8 — TP Đáy Biển Tối',tier:5,need:150},
+    pvp:{name:'Đảo 9 — Đấu Trường',tier:0,need:150}
+  };
+  const ids={4:'farm1',5:'farm2',6:'farm3',7:'farm4',8:'farm5',9:'pvp'};
+  const adminPos={x:760,y:390,r:23};
+  let adminAttackAt=0;
+
+  // Chặn listener cũ và đi đảo bằng level đúng.
+  for(let i=4;i<=9;i++){
+    const b=document.getElementById('boatGoIsland'+i); if(!b) continue;
+    b.addEventListener('click',ev=>{
+      ev.preventDefault(); ev.stopImmediatePropagation();
+      const id=ids[i], cfg=PATCH_INFO[id], p=loadProgress();
+      if((p.level||1)<cfg.need){showGameMsg('Cần Level '+cfg.need+' để tới '+cfg.name);return;}
+      boatNpcModal.classList.remove('show');
+      p.island=id; saveProgress(p); currentIsland=id; currentDimension='world';
+      enemies=[];projectiles=[];effects=[];resetArena();setDimension('world');updateHUD();
+      showGameMsg('Đã tới '+cfg.name);
+    },true);
+  }
+
+  // HUD tên đảo + mô tả HP tăng 15% mỗi bậc đảo.
+  const hudBase=updateHUD;
+  updateHUD=function(){
+    hudBase();
+    const cfg=PATCH_INFO[currentIsland];
+    if(cfg){
+      islandText.textContent=cfg.name;
+      islandHint.textContent=currentIsland==='pvp'?'Đấu trường PVP · yêu cầu Lv.150':
+        `Quái và Boss +${cfg.tier*15}% HP · sát thương +${cfg.tier*15}%`;
+      itemIsland.textContent=cfg.name;
+    }
+    updateAdminQuestText();
+  };
+
+  // Sửa scaling: mỗi đảo tăng 15% HP cho cả NPC và Boss.
+  // Wrapper cũ đã tăng 5%; chia phần cũ rồi áp lại đúng 15%.
+  const spawnBase=spawnEnemy;
+  spawnEnemy=function(isBoss=false,isHiddenBoss=false){
+    const e=spawnBase(isBoss,isHiddenBoss);
+    const cfg=PATCH_INFO[currentIsland];
+    if(e&&cfg&&currentIsland!=='pvp'&&!e.adminBoss){
+      const oldFactor=1+cfg.tier*0.05;
+      const newFactor=1+cfg.tier*0.15;
+      e.maxHp=Math.round(e.maxHp/oldFactor*newFactor);
+      e.hp=e.maxHp;
+      e.damage=Math.max(1,Math.round((e.damage||10)*(1+cfg.tier*.15)));
+      e.islandTier=cfg.tier;
+    }
+    return e;
+  };
+
+  function updateAdminQuestText(){
+    const el=document.getElementById('adminQuestText'); if(!el) return;
+    const p=loadProgress(); const q=p.adminQuest||{};
+    const done=q.accepted?Math.max(0,(p.npc||0)-(q.startNpc||0)):0;
+    el.textContent=q.completed?'Đã hoàn thành 50/50. Có thể vào Dimension Admin.':
+      q.accepted?`Tiến độ: ${Math.min(done,50)}/50 quái. Chỉ tính quái hạ sau khi nhận nhiệm vụ.`:
+      'Hạ 50 quái trên Đảo 8. Hoàn thành sẽ tự động dịch chuyển tới Dimension Admin.';
+  }
+  function saveAdminQuest(p){p.adminQuest=p.adminQuest||{accepted:false,startNpc:0,completed:false,bossDefeated:false};saveProgress(p);}
+  function enterAdminDimension(){
+    const p=loadProgress();
+    if(!p.adminQuest?.completed){showGameMsg('Cần hoàn thành nhiệm vụ 50 quái trước');return;}
+    document.getElementById('adminNpcModal').classList.remove('show');
+    currentDimension='hidden';
+    enemies=[];projectiles=[];effects=[];
+    setDimension('hidden');
+    const hp=60000;
+    enemies.push({x:canvas.width-150,y:canvas.height/2,r:50,hp,maxHp:hp,boss:true,hiddenBoss:false,adminBoss:true,speed:38,damage:600});
+    dimensionLabel.textContent='ADMIN DIMENSION';
+    dimensionLabel.classList.add('show');
+    showGameMsg('Boss Admin xuất hiện: 60.000 HP · 600 damage');
+  }
+
+  document.getElementById('acceptAdminQuest').onclick=()=>{
+    const p=loadProgress();
+    if(currentIsland!=='farm5'){showGameMsg('NPC admin chỉ giao nhiệm vụ tại Đảo 8');return;}
+    p.adminQuest=p.adminQuest||{};
+    if(!p.adminQuest.accepted){p.adminQuest={accepted:true,startNpc:p.npc||0,completed:false,bossDefeated:false};saveProgress(p);showGameMsg('Đã nhận nhiệm vụ: hạ 50 quái');}
+    else showGameMsg(p.adminQuest.completed?'Nhiệm vụ đã hoàn thành':'Nhiệm vụ đang thực hiện');
+    updateAdminQuestText();
+  };
+  document.getElementById('enterAdminBoss').onclick=enterAdminDimension;
+  document.getElementById('closeAdminNpc').onclick=()=>document.getElementById('adminNpcModal').classList.remove('show');
+
+  // Theo dõi kill 50 quái và xử lý Boss Admin riêng.
+  const damageBase=damageEnemy;
+  damageEnemy=function(e,dmg){
+    if(e?.adminBoss){
+      e.hp-=dmg;
+      if(e.hp>0)return;
+      const p=loadProgress(); p.boss=(p.boss||0)+1; p.money=(p.money||0)+250000;
+      p.adminQuest=p.adminQuest||{};p.adminQuest.bossDefeated=true;saveProgress(p);gainExp(5000);
+      const idx=enemies.indexOf(e);if(idx>=0)enemies.splice(idx,1);
+      showGameMsg('Đã hạ Boss Admin! +250.000 tiền');updateHUD();
+      setTimeout(()=>{ if(currentDimension==='hidden'&&!enemies.some(x=>x.adminBoss)) enterAdminDimension(); },4000);
+      return;
+    }
+    const wasNpc=e&&!e.boss&&!e.hiddenBoss;
+    damageBase(e,dmg);
+    if(wasNpc&&currentIsland==='farm5'){
+      const p=loadProgress(),q=p.adminQuest;
+      if(q?.accepted&&!q.completed){
+        const progress=Math.max(0,(p.npc||0)-(q.startNpc||0));
+        if(progress>=50){q.completed=true;saveProgress(p);showGameMsg('Đủ 50 quái! Đang dịch chuyển tới Boss Admin...');setTimeout(enterAdminDimension,900);}
+        else updateAdminQuestText();
+      }
+    }
+  };
+
+  // Boss Admin đánh 600 damage; chết vẫn hồi sinh trong dimension vì dùng currentDimension='hidden'.
+  const updateBase=update;
+  update=function(dt){
+    updateBase(dt);
+    const boss=enemies.find(e=>e.adminBoss);
+    if(boss&&currentDimension==='hidden'){
+      const d=Math.hypot(playerObj.x-boss.x,playerObj.y-boss.y),now=performance.now();
+      if(d<230&&now>=adminAttackAt){
+        adminAttackAt=now+3000;
+        effects.push({type:'ring',x:playerObj.x,y:playerObj.y,life:.7,max:.7,size:95});
+        setTimeout(()=>{if(currentDimension==='hidden'&&enemies.includes(boss)&&playerObj.hp>0){playerObj.hp-=600;showGameMsg('Boss Admin tung skill: -600 HP');}},420);
+      }
+    }
+  };
+
+  // Vẽ map riêng cho đảo 4-9 và NPC admin ở đảo 8.
+  const drawBase=draw;
+  draw=function(){
+    drawBase();
+    if(currentDimension==='world'&&PATCH_INFO[currentIsland]){
+      ctx.save();
+      // Lớp trang trí phủ trên nền cũ để mỗi đảo có bản sắc riêng.
+      if(currentIsland==='farm1'){
+        ctx.fillStyle='rgba(18,20,26,.48)';ctx.fillRect(0,0,canvas.width,canvas.height);
+        for(let i=0;i<14;i++){let x=70+(i*137)%820,y=85+(i*79)%390;ctx.fillStyle='#777';ctx.fillRect(x-8,y-20,16,30);ctx.fillStyle='#444';ctx.fillRect(x-12,y-24,24,6);}
+      }else if(currentIsland==='farm2'){
+        ctx.fillStyle='rgba(0,55,85,.45)';ctx.fillRect(0,0,canvas.width,canvas.height);
+        for(let i=0;i<22;i++){let x=(i*167)%920,y=(i*91)%540;ctx.strokeStyle='#59d8ff';ctx.beginPath();ctx.arc(x,y,5+(i%4)*4,0,Math.PI*2);ctx.stroke();}
+      }else if(currentIsland==='farm3'){
+        ctx.fillStyle='rgba(20,0,32,.55)';ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.strokeStyle='#8e35cc';for(let i=0;i<9;i++){ctx.beginPath();ctx.moveTo(i*120,0);ctx.lineTo(920-i*70,540);ctx.stroke();}
+      }else if(currentIsland==='farm4'){
+        ctx.fillStyle='rgba(90,170,240,.34)';ctx.fillRect(0,0,canvas.width,canvas.height);
+        for(let i=0;i<12;i++){let x=(i*181)%920,y=60+(i*67)%410;ctx.fillStyle='rgba(255,255,255,.8)';ctx.beginPath();ctx.arc(x,y,22,0,Math.PI*2);ctx.arc(x+25,y+5,17,0,Math.PI*2);ctx.fill();}
+      }else if(currentIsland==='farm5'){
+        ctx.fillStyle='rgba(0,25,50,.48)';ctx.fillRect(0,0,canvas.width,canvas.height);
+        for(let i=0;i<10;i++){let x=35+i*92;ctx.fillStyle=i%2?'#174f72':'#0d3855';ctx.fillRect(x,310-(i%3)*35,65,210);ctx.strokeStyle='#42cfff';ctx.strokeRect(x,310-(i%3)*35,65,210);}
+      }else if(currentIsland==='pvp'){
+        ctx.strokeStyle='#ffcc55';ctx.lineWidth=5;ctx.strokeRect(80,65,760,410);ctx.fillStyle='rgba(120,20,20,.18)';ctx.fillRect(80,65,760,410);
+      }
+      if(currentIsland==='farm5'){
+        ctx.beginPath();ctx.arc(adminPos.x,adminPos.y,adminPos.r,0,Math.PI*2);ctx.fillStyle='#20bfe8';ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
+        ctx.fillStyle='#fff';ctx.font='11px monospace';ctx.textAlign='center';ctx.fillText('admin',adminPos.x,adminPos.y-32);ctx.fillText('Nhiệm vụ 50 quái · nhấn E',adminPos.x,adminPos.y+42);
+      }
+      ctx.restore();
+    }
+    const boss=enemies.find(e=>e.adminBoss);
+    if(boss){ctx.save();ctx.fillStyle='#fff';ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.fillText('BOSS ADMIN · 600 DAMAGE',boss.x,boss.y+70);ctx.restore();}
+  };
+
+  // Click / phím E mở NPC admin.
+  canvas.addEventListener('mousedown',ev=>{
+    if(currentIsland!=='farm5'||currentDimension!=='world')return;
+    const r=canvas.getBoundingClientRect(),x=(ev.clientX-r.left)*canvas.width/r.width,y=(ev.clientY-r.top)*canvas.height/r.height;
+    if(Math.hypot(x-adminPos.x,y-adminPos.y)<48){ev.preventDefault();ev.stopImmediatePropagation();updateAdminQuestText();document.getElementById('adminNpcModal').classList.add('show');}
+  },true);
+  window.addEventListener('keydown',ev=>{
+    if(ev.key.toLowerCase()==='e'&&currentIsland==='farm5'&&currentDimension==='world'&&Math.hypot(playerObj.x-adminPos.x,playerObj.y-adminPos.y)<80){ev.preventDefault();ev.stopImmediatePropagation();updateAdminQuestText();document.getElementById('adminNpcModal').classList.add('show');}
+  },true);
+
+  updateHUD();
+})();
+</script>
+
+
+<style id="travel-fix-style">
+#boatNpcModal .npc-modal-box{max-height:88vh;overflow-y:auto;}
+#boatNpcModal .npc-choice-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+@media(max-width:600px){#boatNpcModal .npc-choice-grid{grid-template-columns:1fr;}}
+</style>
+<script id="travel-fix-final">
+(()=>{
+  const TRAVEL={
+    1:{id:'starter',need:1,name:'Đảo 1 — Đảo Khởi Đầu'},
+    2:{id:'forest',need:25,name:'Đảo 2 — Đảo Rừng'},
+    3:{id:'void',need:40,name:'Đảo 3 — Đảo Hắc Tử'},
+    4:{id:'farm1',need:60,name:'Đảo 4 — Nghĩa Địa'},
+    5:{id:'farm2',need:80,name:'Đảo 5 — Thành Phố Đáy Biển'},
+    6:{id:'farm3',need:100,name:'Đảo 6 — Hắc Cửu Tử'},
+    7:{id:'farm4',need:125,name:'Đảo 7 — Đảo Trời'},
+    8:{id:'farm5',need:150,name:'Đảo 8 — TP Đáy Biển Tối'},
+    9:{id:'pvp',need:150,name:'Đảo 9 — Đấu Trường'}
+  };
+
+  function goIsland(num){
+    const cfg=TRAVEL[num];
+    if(!cfg)return;
+    const p=loadProgress();
+    const level=Number(p.level)||1;
+    if(level<cfg.need){
+      showGameMsg('Chưa đủ level! Cần Level '+cfg.need+' để tới '+cfg.name);
+      return;
+    }
+    const modal=document.getElementById('boatNpcModal');
+    if(modal)modal.classList.remove('show');
+
+    // Quan trọng: thoát dimension trước rồi mới tạo quái của đảo mới.
+    currentDimension='world';
+    if(typeof setDimension==='function')setDimension('world');
+    p.island=cfg.id;
+    saveProgress(p);
+    currentIsland=cfg.id;
+    enemies=[]; projectiles=[]; effects=[];
+    resetArena();
+    updateHUD();
+    showGameMsg('Đã tới '+cfg.name);
+  }
+
+  // Clone nút để xóa toàn bộ listener cũ bị xung đột.
+  for(let i=1;i<=9;i++){
+    const old=document.getElementById('boatGoIsland'+i);
+    if(!old)continue;
+    const fresh=old.cloneNode(true);
+    old.replaceWith(fresh);
+    fresh.addEventListener('click',e=>{
+      e.preventDefault();
+      e.stopPropagation();
+      goIsland(i);
+    });
+  }
+
+  // Khôi phục đúng đảo đã lưu khi vào game/reload.
+  const restore=()=>{
+    const p=loadProgress();
+    const valid=new Set(Object.values(TRAVEL).map(x=>x.id));
+    if(valid.has(p.island))currentIsland=p.island;
+    updateHUD();
+  };
+  setTimeout(restore,0);
+
+  window.goBloxIsland=goIsland;
+})();
+</script>
+
+
+<!-- ===== FINAL FIX: NEXX8N TRAVEL + MOBILE SHOP + OBSERVATION HAKI ===== -->
+<style id="final-gameplay-fix-style">
+  #observationDarkOverlay{
+    position:absolute;inset:0;z-index:18;display:none;pointer-events:none;
+    background:rgba(0,0,0,.56);box-shadow:inset 0 0 110px rgba(120,80,255,.30);
+  }
+  #observationDarkOverlay.show{display:block}
+  #observationStatus{
+    position:absolute;left:50%;top:54px;transform:translateX(-50%);z-index:25;
+    display:none;padding:7px 12px;border:1px solid #a98cff;border-radius:6px;
+    background:rgba(20,10,35,.88);color:#e6dcff;font:700 11px 'JetBrains Mono',monospace;
+  }
+  #observationStatus.show{display:block}
+  #powerNpcModal .npc-modal-box{width:430px;max-width:92%;background:#101419;border-color:#ff9d5c;box-shadow:0 0 36px rgba(255,120,50,.18)}
+  #powerNpcModal .npc-choice-grid{grid-template-columns:1fr 1fr}
+  #powerNpcModal .npc-choice{min-height:78px;background:#15110f;border-color:#66402e}
+  #powerNpcModal .npc-choice.owned{border-color:#65dc78;color:#9dffae;background:#0e1b11}
+  #powerNpcModal .npc-modal-close{padding:10px}
+  body.mobile-mode #powerNpcModal .npc-modal-box{max-height:88vh;overflow-y:auto}
+  body.mobile-mode #powerNpcModal .npc-choice-grid{grid-template-columns:1fr}
+  #boatNpcModal .npc-modal-box{max-height:88vh;overflow-y:auto}
+  #boatNpcModal .npc-choice.locked{opacity:.42;filter:grayscale(.7)}
+</style>
+<script id="final-gameplay-fix-script">
+(()=>{
+  'use strict';
+  const canvas=document.getElementById('gameCanvas');
+  const shell=document.querySelector('#screen-game .game-shell');
+  if(!canvas||!shell)return;
+
+  // ---------- UI HAKI ----------
+  if(!document.getElementById('observationDarkOverlay')){
+    shell.insertAdjacentHTML('beforeend','<div id="observationDarkOverlay"></div><div id="observationStatus"></div>');
+  }
+  const hakiOverlay=document.getElementById('observationDarkOverlay');
+  const hakiStatus=document.getElementById('observationStatus');
+  let hakiActive=false;
+  let hakiLastHp=Number(playerObj?.hp)||0;
+  let hakiLastDodgeAt=0;
+  let hakiRechargeTimer=null;
+
+  function ensureHakiData(p){
+    p.powers=p.powers||{};
+    if(typeof p.powers.observation!=='boolean')p.powers.observation=false;
+    if(!Number.isFinite(Number(p.powers.dodges)))p.powers.dodges=0;
+    if(!Number.isFinite(Number(p.powers.hakiReadyAt)))p.powers.hakiReadyAt=0;
+    return p;
+  }
+  function renderHaki(){
+    const p=ensureHakiData(loadProgress());
+    const remain=Math.max(0,Math.ceil((Number(p.powers.hakiReadyAt||0)-Date.now())/1000));
+    hakiOverlay.classList.toggle('show',hakiActive);
+    hakiStatus.classList.toggle('show',hakiActive||remain>0);
+    if(hakiActive)hakiStatus.textContent='HAKI QUAN SÁT · NÉ '+Math.max(0,p.powers.dodges)+'/10';
+    else if(remain>0)hakiStatus.textContent='HAKI HỒI LẠI SAU '+remain+'s';
+    else hakiStatus.textContent='';
+  }
+  function beginRecharge(){
+    const p=ensureHakiData(loadProgress());
+    p.powers.dodges=0;
+    p.powers.hakiReadyAt=Date.now()+30000;
+    saveProgress(p);
+    hakiActive=false;
+    clearInterval(hakiRechargeTimer);
+    hakiRechargeTimer=setInterval(()=>{
+      const q=ensureHakiData(loadProgress());
+      if(Date.now()>=q.powers.hakiReadyAt){
+        q.powers.dodges=10;q.powers.hakiReadyAt=0;saveProgress(q);
+        clearInterval(hakiRechargeTimer);hakiRechargeTimer=null;
+        showGameMsg('Haki quan sát đã hồi đầy 10 lần né');
+      }
+      renderHaki();
+    },250);
+  }
+  function activateObservationFinal(){
+    const p=ensureHakiData(loadProgress());
+    if(!p.powers.observation){showGameMsg('Bạn chưa mua Haki quan sát');return;}
+    const remain=Math.max(0,Math.ceil((p.powers.hakiReadyAt-Date.now())/1000));
+    if(remain>0){showGameMsg('Haki đang hồi · còn '+remain+' giây');renderHaki();return;}
+    if(p.powers.dodges<=0){p.powers.dodges=10;p.powers.hakiReadyAt=0;saveProgress(p);}
+    hakiActive=true;hakiLastHp=Number(playerObj.hp)||0;
+    showGameMsg('Đã bật Haki quan sát · né được '+p.powers.dodges+' lần');
+    renderHaki();
+  }
+  window.activateObservationFinal=activateObservationFinal;
+
+  // Theo dõi mọi nguồn mất HP, kể cả skill boss, rồi hoàn lại nếu Haki đang bật.
+  setInterval(()=>{
+    const now=performance.now();
+    const hp=Number(playerObj?.hp)||0;
+    if(hakiActive&&hp<hakiLastHp&&now-hakiLastDodgeAt>350){
+      const p=ensureHakiData(loadProgress());
+      if(p.powers.dodges>0){
+        playerObj.hp=Math.min(playerObj.maxHp,hakiLastHp);
+        p.powers.dodges-=1;saveProgress(p);hakiLastDodgeAt=now;
+        showGameMsg('Haki né đòn! Còn '+p.powers.dodges+'/10 lần');
+        if(p.powers.dodges<=0){showGameMsg('Haki đã hết lượt né · hồi đầy sau 30 giây');beginRecharge();}
+      }else beginRecharge();
+    }
+    hakiLastHp=Number(playerObj?.hp)||0;
+    renderHaki();
+  },70);
+
+  // Ghi đè nút/phím Haki bằng handler cuối cùng.
+  const hakiBtn=document.getElementById('mobileHaki');
+  if(hakiBtn){
+    const fresh=hakiBtn.cloneNode(true);hakiBtn.replaceWith(fresh);
+    fresh.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();activateObservationFinal();});
+  }
+  window.addEventListener('keydown',e=>{
+    if(e.key.toLowerCase()!=='e'||e.repeat)return;
+    const nearBoat=typeof boatSeller!=='undefined'&&Math.hypot(playerObj.x-boatSeller.x,playerObj.y-boatSeller.y)<82;
+    const nearSword=typeof swordSeller!=='undefined'&&Math.hypot(playerObj.x-swordSeller.x,playerObj.y-swordSeller.y)<82;
+    const nearFaction=typeof factionChanger!=='undefined'&&Math.hypot(playerObj.x-factionChanger.x,playerObj.y-factionChanger.y)<82;
+    if(!nearBoat&&!nearSword&&!nearFaction)activateObservationFinal();
+  },true);
+
+  // ---------- SHOP SỨC MẠNH, HOẠT ĐỘNG NHƯ SHOP KIẾM ----------
+  const POWER_COST={speed:40000,damage:90000,blink:130000,observation:20000};
+  const POWER_NAME={speed:'Chạy nhanh',damage:'Dame to hơn',blink:'Tốc biến',observation:'Haki quan sát'};
+  function refreshPowerShop(){
+    const p=ensureHakiData(loadProgress());
+    document.querySelectorAll('#powerNpcModal [data-power]').forEach(btn=>{
+      const id=btn.dataset.power;
+      btn.classList.toggle('owned',!!p.powers[id]);
+      const small=btn.querySelector('small');
+      if(p.powers[id])small.textContent=id==='observation'?'Đã mua · 10 lần né, hồi 30s':'Đã mua vĩnh viễn';
+    });
+  }
+  document.querySelectorAll('#powerNpcModal [data-power]').forEach(old=>{
+    const btn=old.cloneNode(true);old.replaceWith(btn);
+    btn.addEventListener('click',e=>{
+      e.preventDefault();e.stopPropagation();
+      const id=btn.dataset.power,p=ensureHakiData(loadProgress());
+      if(p.powers[id]){showGameMsg('Bạn đã sở hữu '+POWER_NAME[id]);refreshPowerShop();return;}
+      const cost=POWER_COST[id];
+      if((Number(p.money)||0)<cost){showGameMsg('Không đủ '+cost.toLocaleString('vi-VN')+' tiền');return;}
+      p.money-=cost;p.powers[id]=true;
+      if(id==='observation'){p.powers.dodges=10;p.powers.hakiReadyAt=0;}
+      saveProgress(p);updateHUD();refreshPowerShop();
+      showGameMsg('Đã mua '+POWER_NAME[id]);
+    });
+  });
+  const closePower=document.getElementById('closePowerNpc');
+  if(closePower){const fresh=closePower.cloneNode(true);closePower.replaceWith(fresh);fresh.addEventListener('click',()=>document.getElementById('powerNpcModal').classList.remove('show'));}
+  document.getElementById('powerNpcModal')?.addEventListener('click',e=>{if(e.target.id==='powerNpcModal')e.currentTarget.classList.remove('show')});
+  document.getElementById('mobileOpenPowerShop')?.addEventListener('pointerdown',()=>setTimeout(()=>{refreshPowerShop();document.getElementById('powerNpcModal')?.classList.add('show')},0));
+  document.getElementById('powerBtn')?.addEventListener('click',refreshPowerShop);
+  refreshPowerShop();
+
+  // ---------- DU LỊCH: CHỈ CHỌN ĐẢO SAU KHI MỞ NEXX8N ----------
+  const ISLANDS={
+    1:{id:'starter',need:1,name:'Đảo 1 — Đảo Khởi Đầu'},
+    2:{id:'forest',need:25,name:'Đảo 2 — Đảo Rừng'},
+    3:{id:'void',need:40,name:'Đảo 3 — Đảo Hắc Tử'},
+    4:{id:'farm1',need:60,name:'Đảo 4 — Nghĩa Địa'},
+    5:{id:'farm2',need:80,name:'Đảo 5 — Thành Phố Đáy Biển'},
+    6:{id:'farm3',need:100,name:'Đảo 6 — Hắc Cửu Tử'},
+    7:{id:'farm4',need:125,name:'Đảo 7 — Đảo Trời'},
+    8:{id:'farm5',need:150,name:'Đảo 8 — TP Đáy Biển Tối'},
+    9:{id:'pvp',need:150,name:'Đảo 9 — Đấu Trường'}
+  };
+  let boatMenuAuthorized=false;
+  const boatModal=document.getElementById('boatNpcModal');
+  function openNexx8n(){
+    boatMenuAuthorized=true;
+    const p=loadProgress(),lv=Number(p.level)||1;
+    for(let i=1;i<=9;i++){
+      const b=document.getElementById('boatGoIsland'+i),cfg=ISLANDS[i];
+      if(b)b.classList.toggle('locked',lv<cfg.need);
+    }
+    boatModal?.classList.add('show');
+  }
+  function closeNexx8n(){boatMenuAuthorized=false;boatModal?.classList.remove('show');}
+  function travelFinal(num){
+    if(!boatMenuAuthorized||!boatModal?.classList.contains('show')){showGameMsg('Hãy tới NPC nexx8n để chọn đảo');return;}
+    const cfg=ISLANDS[num],p=loadProgress(),lv=Number(p.level)||1;
+    if(lv<cfg.need){showGameMsg('Chưa đủ level! Cần Level '+cfg.need);return;}
+    closeNexx8n();
+    currentDimension='world';
+    if(typeof setDimension==='function')setDimension('world');
+    p.island=cfg.id;saveProgress(p);currentIsland=cfg.id;
+    enemies.length=0;projectiles.length=0;effects.length=0;
+    if(typeof resetArena==='function')resetArena();
+    playerObj.x=120;playerObj.y=canvas.height/2;playerObj.hp=playerObj.maxHp;
+    updateHUD();showGameMsg('Đã tới '+cfg.name);
+  }
+  for(let i=1;i<=9;i++){
+    const old=document.getElementById('boatGoIsland'+i);if(!old)continue;
+    const fresh=old.cloneNode(true);old.replaceWith(fresh);
+    fresh.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();travelFinal(i)},true);
+  }
+  const closeBoat=document.getElementById('closeBoatNpc');
+  if(closeBoat){const fresh=closeBoat.cloneNode(true);closeBoat.replaceWith(fresh);fresh.addEventListener('click',closeNexx8n);}
+  boatModal?.addEventListener('click',e=>{if(e.target===boatModal)closeNexx8n()});
+
+  // Chỉ click trực tiếp hoặc đứng gần nexx8n nhấn E mới mở menu đảo.
+  canvas.addEventListener('pointerdown',e=>{
+    if(typeof boatSeller==='undefined'||currentDimension!=='world')return;
+    const r=canvas.getBoundingClientRect();
+    const x=(e.clientX-r.left)*canvas.width/r.width,y=(e.clientY-r.top)*canvas.height/r.height;
+    if(Math.hypot(x-boatSeller.x,y-boatSeller.y)<52){e.preventDefault();e.stopImmediatePropagation();openNexx8n();}
+  },true);
+  window.addEventListener('keydown',e=>{
+    if(e.key.toLowerCase()==='e'&&typeof boatSeller!=='undefined'&&currentDimension==='world'&&Math.hypot(playerObj.x-boatSeller.x,playerObj.y-boatSeller.y)<82){
+      e.preventDefault();e.stopImmediatePropagation();openNexx8n();
+    }
+  },true);
+
+  // Vô hiệu hóa các nút đi đảo tắt, bắt buộc phải tới NPC.
+  ['openSafeBoatNpc','goIsland1','goIsland2'].forEach(id=>{
+    const el=document.getElementById(id);if(el){el.style.display='none';el.onclick=null;}
+  });
+  window.goBloxIsland=()=>showGameMsg('Hãy tới NPC nexx8n để chọn đảo');
+
+  renderHaki();
+})();
+</script>
+
+
+<!-- ===== FINAL FIX: ĐẢO 4 DÙNG NỀN TẢNG ĐẢO 3 ===== -->
+<script id="final-island4-clone-island3">
+(() => {
+  "use strict";
+
+  const ISLAND4_ID = "farm1";
+  const ISLAND4_LEVEL = 60;
+  const ISLAND4_NAME = "Đảo 4 — Nghĩa Địa";
+
+  function progressSafe() {
+    try {
+      return typeof loadProgress === "function" ? loadProgress() : {};
+    } catch (error) {
+      console.error(error);
+      return {};
+    }
+  }
+
+  function notify(text) {
+    if (typeof showGameMsg === "function") showGameMsg(text);
+    else console.log(text);
+  }
+
+  // Xóa chắc chắn toàn bộ đảo 5 trở lên.
+  function removeIsland5Plus() {
+    for (let i = 5; i <= 9; i++) {
+      document.getElementById("boatGoIsland" + i)?.remove();
+      document.getElementById("goIsland" + i)?.remove();
+    }
+  }
+
+  // Đảo 4 dùng quái/boss gốc của Đảo 3, sau đó tăng đúng 10% HP và damage.
+  const spawnIslandBase = spawnEnemy;
+  spawnEnemy = function(isBoss = false, isHiddenBoss = false) {
+    if (currentIsland !== ISLAND4_ID || isHiddenBoss || currentDimension !== "world") {
+      return spawnIslandBase(isBoss, isHiddenBoss);
+    }
+
+    const realIsland = currentIsland;
+    currentIsland = "void"; // tạo quái/boss y hệt Đảo 3
+    let enemy;
+
+    try {
+      enemy = spawnIslandBase(isBoss, false);
+    } finally {
+      currentIsland = realIsland;
+    }
+
+    enemy = enemy || enemies[enemies.length - 1];
+    if (enemy) {
+      enemy.forest = false;
+      enemy.voidIsland = false;
+      enemy.isIsland4 = true;
+      enemy.maxHp = Math.max(1, Math.round(enemy.maxHp * 1.10));
+      enemy.hp = enemy.maxHp;
+      enemy.damage = Math.max(1, Math.round((enemy.damage || 10) * 1.10));
+    }
+
+    return enemy;
+  };
+
+  // Đảo 4 nhận 5000% EXP của Đảo 3 = x50.
+  const gainExpBase = gainExp;
+  gainExp = function(amount) {
+    const multiplier =
+      currentIsland === ISLAND4_ID && currentDimension === "world" ? 50 : 1;
+    return gainExpBase(Math.round(amount * multiplier));
+  };
+
+  // Giao diện/HUD riêng cho Đảo 4.
+  const updateHudBase = updateHUD;
+  updateHUD = function() {
+    updateHudBase();
+
+    const progress = progressSafe();
+    const level = Number(progress.level) || 1;
+    const button = document.getElementById("boatGoIsland4");
+
+    if (button) {
+      const unlocked = level >= ISLAND4_LEVEL;
+      button.classList.toggle("locked", !unlocked);
+      button.innerHTML = unlocked
+        ? `${ISLAND4_NAME}<small>Lv.60+ · Quái/Boss +10% HP & damage · EXP x50</small>`
+        : `Đảo 4 — ???<small>Yêu cầu Level ${ISLAND4_LEVEL}</small>`;
+    }
+
+    if (currentIsland === ISLAND4_ID) {
+      islandText.textContent = ISLAND4_NAME;
+      islandHint.textContent =
+        "Dùng quái và boss Đảo 3 · +10% HP & damage · EXP x50";
+      if (typeof itemIsland !== "undefined" && itemIsland) {
+        itemIsland.textContent = ISLAND4_NAME;
+      }
+    }
+
+    removeIsland5Plus();
+  };
+
+  function travelToIsland4(event) {
+    event?.preventDefault();
+    event?.stopImmediatePropagation();
+
+    const modal = document.getElementById("boatNpcModal");
+    if (!modal?.classList.contains("show")) {
+      notify("Hãy tới NPC nexx8n để chọn đảo");
+      return;
+    }
+
+    const progress = progressSafe();
+    const level = Number(progress.level) || 1;
+
+    if (level < ISLAND4_LEVEL) {
+      notify(`Chưa đủ Level! Cần Level ${ISLAND4_LEVEL} để qua Đảo 4.`);
+      updateHUD();
+      return;
+    }
+
+    modal.classList.remove("show");
+    currentDimension = "world";
+    if (typeof setDimension === "function") setDimension("world");
+
+    progress.island = ISLAND4_ID;
+    saveProgress(progress);
+    currentIsland = ISLAND4_ID;
+
+    enemies.length = 0;
+    projectiles.length = 0;
+    effects.length = 0;
+
+    resetArena();
+
+    playerObj.x = 120;
+    playerObj.y = canvas.height / 2;
+    playerObj.hp = playerObj.maxHp;
+
+    updateHUD();
+    notify("Đã tới " + ISLAND4_NAME);
+  }
+
+  function installIsland4Button() {
+    removeIsland5Plus();
+
+    const oldButton = document.getElementById("boatGoIsland4");
+    if (!oldButton) return;
+
+    // Xóa toàn bộ listener đảo 4 cũ gây xung đột.
+    const cleanButton = oldButton.cloneNode(true);
+    oldButton.replaceWith(cleanButton);
+    cleanButton.addEventListener("click", travelToIsland4, true);
+
+    updateHUD();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", installIsland4Button, { once: true });
+  } else {
+    installIsland4Button();
+  }
+
+  setInterval(() => {
+    removeIsland5Plus();
+    if (document.getElementById("boatNpcModal")?.classList.contains("show")) {
+      updateHUD();
+    }
+  }, 1000);
 })();
 </script>
 
