@@ -2310,5 +2310,208 @@ body.mobile-mode .currency-box{top:320px!important}
 })();
 </script>
 
+
+<style id="mobile-shop-v1">
+.mobile-shop-btn{
+  display:none;
+  position:absolute;
+  right:112px;
+  bottom:32px;
+  z-index:26;
+  width:70px;
+  height:54px;
+  border-radius:18px;
+  border:2px solid rgba(255,255,255,.7);
+  background:rgba(18,18,24,.9);
+  color:#fff;
+  font:800 12px 'JetBrains Mono',monospace;
+  touch-action:none;
+}
+body.mobile-mode .mobile-shop-btn{display:block}
+.mobile-shop-menu{
+  position:absolute;
+  inset:0;
+  z-index:70;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  background:rgba(0,0,0,.76);
+}
+.mobile-shop-menu.show{display:flex}
+.mobile-shop-card{
+  width:min(360px,92vw);
+  max-height:82vh;
+  overflow:auto;
+  background:#101216;
+  border:1px solid #7d6ecf;
+  border-radius:12px;
+  padding:16px;
+}
+.mobile-shop-title{font-size:18px;font-weight:900;margin-bottom:5px}
+.mobile-shop-sub{color:#a9a9b4;font-size:11px;line-height:1.5;margin-bottom:13px}
+.mobile-shop-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mobile-shop-choice{
+  min-height:84px;
+  padding:12px 8px;
+  border:1px solid #4d4964;
+  border-radius:8px;
+  background:#171721;
+  color:#fff;
+  font:700 12px 'JetBrains Mono',monospace;
+}
+.mobile-shop-choice small{display:block;margin-top:5px;color:#aaa6bb;font-size:9px;line-height:1.4}
+.mobile-shop-close{
+  width:100%;
+  margin-top:12px;
+  padding:10px;
+  border:1px solid #555;
+  border-radius:7px;
+  background:#0c0c10;
+  color:#ddd;
+  font-family:inherit;
+}
+body.mobile-mode .mobile-haki{right:180px!important;bottom:104px!important}
+body.mobile-mode .mobile-blink{right:112px!important;bottom:104px!important}
+@media(max-width:520px){
+  .mobile-shop-grid{grid-template-columns:1fr}
+  .mobile-shop-card{width:94vw}
+}
+</style>
+
+<div class="mobile-shop-menu" id="mobileShopMenu">
+  <div class="mobile-shop-card">
+    <div class="mobile-shop-title">🛒 SHOP MOBILE</div>
+    <div class="mobile-shop-sub">Chọn cửa hàng muốn mở.</div>
+    <div class="mobile-shop-grid">
+      <button class="mobile-shop-choice" id="mobileOpenSwordShop">
+        🗡️ Mua kiếm
+        <small>Mở cửa hàng REALNAH.</small>
+      </button>
+      <button class="mobile-shop-choice" id="mobileOpenPowerShop">
+        ✨ Mua skill
+        <small>Mở cửa hàng vip nướng.</small>
+      </button>
+    </div>
+    <button class="mobile-shop-close" id="mobileCloseShop">Đóng</button>
+  </div>
+</div>
+
+<script id="mobile-shop-script-v1">
+(()=>{
+  'use strict';
+  const controls=document.querySelector('.mobile-controls');
+  if(controls&&!document.getElementById('mobileShopBtn')){
+    controls.insertAdjacentHTML('beforeend','<button class="mobile-shop-btn" id="mobileShopBtn">SHOP</button>');
+  }
+  const menu=document.getElementById('mobileShopMenu');
+  const open=()=>document.body.classList.contains('mobile-mode')&&menu?.classList.add('show');
+  const close=()=>menu?.classList.remove('show');
+
+  document.getElementById('mobileShopBtn')?.addEventListener('pointerdown',e=>{
+    e.preventDefault();e.stopPropagation();open();
+  });
+  document.getElementById('mobileCloseShop')?.addEventListener('pointerdown',e=>{
+    e.preventDefault();close();
+  });
+  menu?.addEventListener('pointerdown',e=>{if(e.target===menu)close()});
+
+  document.getElementById('mobileOpenSwordShop')?.addEventListener('pointerdown',e=>{
+    e.preventDefault();e.stopPropagation();close();
+    const modal=document.getElementById('swordShopModal');
+    if(modal){modal.classList.add('show');if(typeof showGameMsg==='function')showGameMsg('Đã mở shop kiếm REALNAH');}
+  });
+
+  document.getElementById('mobileOpenPowerShop')?.addEventListener('pointerdown',e=>{
+    e.preventDefault();e.stopPropagation();close();
+    const modal=document.getElementById('powerNpcModal');
+    if(modal){modal.classList.add('show');if(typeof showGameMsg==='function')showGameMsg('Đã mở shop skill vip nướng');}
+  });
+})();
+</script>
+
+
+<style id="mobile-skill-center-bottom-v1">
+body.mobile-mode .skill-panel{
+  left:50%!important;
+  right:auto!important;
+  top:auto!important;
+  bottom:8px!important;
+  width:min(430px,56vw)!important;
+  max-height:190px!important;
+  transform:translateX(-50%)!important;
+  transform-origin:center bottom!important;
+  z-index:23!important;
+  display:grid!important;
+  grid-template-columns:76px repeat(3,1fr)!important;
+  align-items:stretch!important;
+  overflow:hidden!important;
+  border-radius:10px!important;
+}
+body.mobile-mode .skill-panel-title{
+  grid-column:1/-1!important;
+  padding:5px!important;
+  font-size:10px!important;
+}
+body.mobile-mode .unlock-line{
+  grid-column:1/-1!important;
+  padding:3px!important;
+  font-size:9px!important;
+}
+body.mobile-mode .skill-row{
+  min-width:0!important;
+  min-height:66px!important;
+  display:grid!important;
+  grid-template-columns:42px 1fr!important;
+  border-right:1px solid #292929!important;
+  border-bottom:0!important;
+}
+body.mobile-mode .skill-row:last-child{border-right:0!important}
+body.mobile-mode .skill-use{
+  min-height:66px!important;
+  font-size:11px!important;
+  font-weight:900!important;
+}
+body.mobile-mode .skill-name{
+  padding:5px!important;
+  font-size:9px!important;
+  line-height:1.2!important;
+  overflow:hidden!important;
+}
+body.mobile-mode .skill-name small{font-size:7px!important}
+body.mobile-mode .skill-key-pc{display:none!important}
+body.mobile-mode .currency-box{top:68px!important}
+body.mobile-mode .island-box{top:124px!important}
+@media(max-width:700px){
+  body.mobile-mode .skill-panel{width:min(500px,64vw)!important}
+}
+@media(orientation:portrait){
+  body.mobile-mode .skill-panel{
+    width:72vw!important;
+    grid-template-columns:1fr!important;
+    max-height:210px!important;
+  }
+  body.mobile-mode .skill-panel-title,
+  body.mobile-mode .unlock-line{grid-column:1!important}
+  body.mobile-mode .skill-row{
+    min-height:46px!important;
+    grid-template-columns:44px 1fr!important;
+    border-right:0!important;
+    border-bottom:1px solid #292929!important;
+  }
+  body.mobile-mode .skill-use{min-height:46px!important}
+}
+</style>
+
+
+<style id="mobile-skill-center-v2">
+/* Mobile: đưa cụm nút skill vào chính giữa màn hình theo chiều ngang */
+body.mobile-mode .skill-panel{
+  left:50% !important;
+  right:auto !important;
+  transform:translateX(-50%) !important;
+  margin:0 !important;
+}
+</style>
+
 </body>
 </html>
