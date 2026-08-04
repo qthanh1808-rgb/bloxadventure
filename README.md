@@ -988,14 +988,14 @@
       <div class="item-row">❄️ Ice Breath Dragon: <b id="itemSword">Chưa sở hữu</b></div>
       <div class="item-row">🔥 Flame Dragon Breath: <b id="itemFlameSword">Chưa sở hữu</b></div>
       <div class="item-row">✨ Gold Kitana: <b id="itemGoldSword">Chưa sở hữu</b></div>
-      <div class="item-row">🟣 ???: <b id="itemMysterySword">Mở khóa sau update</b></div>
+      
       <div class="item-row">🥋 Võ V2: <b id="itemV2">Chưa mở khóa</b></div><div class="item-row">⚡ Võ V3: <b id="itemV3">Chưa mở khóa</b></div><div class="item-row">🌑 The Void Sword: <b id="itemVoidSword">Chưa sở hữu</b></div>
       <div class="item-row">🗺️ Khu vực: <b id="itemIsland">Đảo Khởi Đầu</b></div>
     </div>
 
     <div class="mobile-controls">
       <div class="joystick" id="joystick"><div class="joystick-knob" id="joystickKnob"></div></div>
-      <button class="mobile-m1" id="mobileM1">M1</button><button class="mobile-fullscreen" id="mobileFullscreen">⛶</button>
+      <button class="mobile-m1" id="mobileM1">VÕ</button><button class="mobile-action mobile-haki" id="mobileHaki">E</button><button class="mobile-action mobile-blink" id="mobileBlink">R</button><button class="mobile-fullscreen" id="mobileFullscreen">⛶</button>
     </div>
 
     <div class="safe-zone-label" id="safeZoneLabel">SAFE ZONE</div>
@@ -1008,12 +1008,12 @@
         <div class="npc-choice-grid">
           <button class="npc-choice" id="boatGoIsland1">Đảo 1<small>Đảo Khởi Đầu · quái và boss cũ</small></button>
           <button class="npc-choice" id="boatGoIsland2">Đảo 2<small>Đảo Rừng · Lv.25+</small></button>
-          <button class="npc-choice" id="boatGoIsland3">Đảo 3<small>Đảo Hắc Tử · khu vực mới</small></button><button class="npc-choice" id="boatGoIsland4">Đảo 4<small>Farm Lv · +15% damage</small></button>
-<button class="npc-choice" id="boatGoIsland5">Đảo 5<small>Farm Lv · +30% damage</small></button>
-<button class="npc-choice" id="boatGoIsland6">Đảo 6<small>Farm Lv · +45% damage</small></button>
-<button class="npc-choice" id="boatGoIsland7">Đảo 7<small>Farm Lv · +60% damage</small></button>
-<button class="npc-choice" id="boatGoIsland8">Đảo 8<small>Farm Lv cuối · +75% damage</small></button>
-<button class="npc-choice" id="boatGoIsland9">Đảo 9<small>PVP · cần thách đấu</small></button>
+          <button class="npc-choice" id="boatGoIsland3">Đảo 3<small>Đảo Hắc Tử · khu vực mới</small></button><button class="npc-choice" id="boatGoIsland4">Đảo 4<small>Yêu cầu Lv.60 · +15% damage</small></button>
+<button class="npc-choice" id="boatGoIsland5">Đảo 5<small>Yêu cầu Lv.80 · +30% damage</small></button>
+<button class="npc-choice" id="boatGoIsland6">Đảo 6<small>Yêu cầu Lv.100 · +45% damage</small></button>
+<button class="npc-choice" id="boatGoIsland7">Đảo 7<small>Yêu cầu Lv.125 · +60% damage</small></button>
+<button class="npc-choice" id="boatGoIsland8">Đảo 8<small>Yêu cầu Lv.150 · +75% damage</small></button>
+<button class="npc-choice" id="boatGoIsland9">Đảo 9<small>Yêu cầu Lv.150 · PVP</small></button>
         </div>
         <button class="npc-modal-close" id="closeBoatNpc">Đóng</button>
       </div>
@@ -1362,7 +1362,7 @@ let currentIsland = 'starter';
 let hiddenBossSkillCooldown = 0;
 
 const playerObj = { x:460, y:270, r:16, speed:210, hp:100, maxHp:100, facingX:1, facingY:0 };
-const swordSeller = { x:760, y:390, r:20, name:'REALNAH' };
+const swordSeller = { x:198, y:156, r:20, name:'REALNAH' }; // trong SAFE ZONE
 const boatSeller = { x:300, y:445, r:21, name:'nexx8n' };
 const factionChanger = { x:610, y:105, r:21, name:'ĐỔI PHE' };
 const v2Trainer = { x:155, y:115, r:21, name:'nowaytosay' };
@@ -2118,8 +2118,8 @@ function travelIsland(target){
 document.getElementById('goIsland1').addEventListener('click',()=>travelIsland('starter'));
 document.getElementById('goIsland2').addEventListener('click',()=>travelIsland('forest'));
 document.getElementById('redeemKeyBtn').addEventListener('click',()=>{const p=loadProgress();if(p.keys<=0){showGameMsg('Bạn chưa có Boss Key');return;}showHiddenBossPrompt();});
-document.getElementById('fullscreenBtn').addEventListener('click',async()=>{try{if(!document.fullscreenElement){await document.documentElement.requestFullscreen();fullscreenBtn.textContent='thu nhỏ [F]';}else{await document.exitFullscreen();fullscreenBtn.textContent='phóng to [F]';}}catch(e){showGameMsg('Trình duyệt không hỗ trợ phóng to');}});
-document.addEventListener('fullscreenchange',()=>{fullscreenBtn.textContent=document.fullscreenElement?'thu nhỏ [F]':'phóng to [F]';});
+document.getElementById('fullscreenBtn').addEventListener('click',async()=>{try{const target=document.getElementById('screen-game');if(!document.fullscreenElement){await target.requestFullscreen({navigationUI:'hide'});fullscreenBtn.textContent='thu nhỏ [F]';if(screen.orientation?.lock){screen.orientation.lock('landscape').catch(()=>{});}}else{await document.exitFullscreen();fullscreenBtn.textContent='phóng to [F]';}}catch(e){showGameMsg('Không thể phóng to. Hãy chạm lại nút ⛶');}});
+document.addEventListener('fullscreenchange',()=>{fullscreenBtn.textContent=document.fullscreenElement?'thu nhỏ [F]':'phóng to [F]';document.body.classList.toggle('game-fullscreen',!!document.fullscreenElement);});
 document.getElementById('toggleWeapon').addEventListener('click',toggleWeaponMode);
 
 const boatNpcModal=document.getElementById('boatNpcModal');
@@ -2253,7 +2253,7 @@ document.getElementById('claimV3Quest')?.addEventListener('click',()=>{const p=l
 
 // 6 đảo mới
 const islandInfo={farm1:['Đảo 4 — Hỏa Sơn',1],farm2:['Đảo 5 — Tuyết Cốc',2],farm3:['Đảo 6 — Thiên Không',3],farm4:['Đảo 7 — Long Địa',4],farm5:['Đảo 8 — Tận Thế',5],pvp:['Đảo 9 — PVP',0]};
-for(let i=4;i<=9;i++)document.getElementById('boatGoIsland'+i)?.addEventListener('click',()=>{document.getElementById('boatNpcModal').classList.remove('show');const id=i===9?'pvp':'farm'+(i-3);const p=loadProgress();p.island=id;saveProgress(p);currentIsland=id;enemies=[];projectiles=[];effects=[];resetArena();updateHUD();showGameMsg('Đã tới '+islandInfo[id][0])});
+const islandLevelNeed={4:60,5:80,6:100,7:125,8:150,9:150};for(let i=4;i<=9;i++)document.getElementById('boatGoIsland'+i)?.addEventListener('click',()=>{const p=loadProgress();const need=islandLevelNeed[i]||1;if((p.level||1)<need){showGameMsg('Bạn cần Level '+need+' để vào Đảo '+i);return;}document.getElementById('boatNpcModal').classList.remove('show');const id=i===9?'pvp':'farm'+(i-3);p.island=id;saveProgress(p);currentIsland=id;enemies=[];projectiles=[];effects=[];resetArena();updateHUD();showGameMsg('Đã tới '+islandInfo[id][0])});
 const hudOld=updateHUD;updateHUD=function(){hudOld();const info=islandInfo[currentIsland];if(info){islandText.textContent=info[0];islandHint.textContent=currentIsland==='pvp'?'Chỉ PVP sau khi thách đấu':`Quái +${info[1]*15}% damage · +${info[1]*5}% HP · tiền x${Math.pow(3,info[1]).toFixed(0)}`;itemIsland.textContent=info[0]}};
 const spawnOld=spawnEnemy;spawnEnemy=function(isBoss=false,isHiddenBoss=false){const before=enemies.length;spawnOld(isBoss,isHiddenBoss);const e=enemies[enemies.length-1];const info=islandInfo[currentIsland];if(e&&info&&currentIsland!=='pvp'){const n=info[1];e.maxHp=Math.round(e.maxHp*(1+n*.05));e.hp=e.maxHp;e.damage=Math.round((e.damage||10)*(1+n*.15));e.moneyMultiplier=Math.pow(3,n)}return e};
 
@@ -2277,6 +2277,36 @@ const tOld=document.getElementById('toggleWeapon').onclick;
 // max level safety
 setInterval(()=>{const p=loadProgress();if(p.level>150){p.level=150;p.exp=0;saveProgress(p)}},1000);
 updateHUD();
+})();
+</script>
+
+
+<style id="mobile-layout-v4">
+#screen-game:fullscreen{width:100vw!important;height:100vh!important;max-width:none!important;border:0!important;border-radius:0!important;background:#050505}
+#screen-game:fullscreen .game-shell{height:calc(100vh - 44px)!important}
+#screen-game:fullscreen #gameCanvas{width:100%!important;height:100%!important;object-fit:contain!important}
+body.game-fullscreen{padding:0!important;overflow:hidden!important}
+.mobile-action{display:none;position:absolute;z-index:24;width:54px;height:54px;border-radius:50%;border:2px solid rgba(255,255,255,.65);background:rgba(20,20,26,.82);color:#fff;font:800 18px 'JetBrains Mono',monospace;touch-action:none}
+body.mobile-mode .mobile-action{display:block}
+body.mobile-mode .mobile-haki{right:104px;bottom:100px}
+body.mobile-mode .mobile-blink{right:34px;bottom:112px}
+body.mobile-mode .mobile-m1{right:30px;bottom:28px;width:74px;height:74px;font-size:13px;background:rgba(92,50,180,.72);border-color:#c39cff}
+body.mobile-mode .mobile-fullscreen{display:block;left:12px;right:auto;top:10px;width:48px;height:48px;border-radius:50%;background:rgba(0,0,0,.82);z-index:30}
+body.mobile-mode .skill-panel{right:8px!important;top:70px!important;width:220px!important;max-height:240px!important;transform:scale(.88)!important;transform-origin:top right!important;z-index:22!important}
+body.mobile-mode .skill-use{min-height:50px;font-weight:800}
+body.mobile-mode .skill-use.selected{background:#7040d8!important;color:#fff!important;box-shadow:inset 0 0 16px #d7b7ff}
+body.mobile-mode .currency-box{top:320px!important}
+</style>
+<script id="controls-v4">
+(()=>{
+  let lastPointer={x:460,y:270};
+  const canvas=document.getElementById('gameCanvas');
+  canvas.addEventListener('pointermove',e=>{const r=canvas.getBoundingClientRect();lastPointer={x:(e.clientX-r.left)*canvas.width/r.width,y:(e.clientY-r.top)*canvas.height/r.height};});
+  function activateObservation(){const p=loadProgress();if(!p.powers?.observation){showGameMsg('Bạn chưa mua Haki quan sát');return;}if((p.powers.dodges||0)<=0)p.powers.dodges=10;saveProgress(p);showGameMsg('Haki quan sát đã bật · còn '+p.powers.dodges+' lần né');}
+  function blinkTo(x,y){const p=loadProgress();if(!p.powers?.blink){showGameMsg('Bạn chưa mua Tốc Biến');return;}playerObj.x=Math.max(20,Math.min(canvas.width-20,x));playerObj.y=Math.max(20,Math.min(canvas.height-20,y));showGameMsg('Tốc biến!');}
+  window.addEventListener('keydown',e=>{if(e.repeat)return;const k=e.key.toLowerCase();if(k==='r')blinkTo(lastPointer.x,lastPointer.y);if(k==='e'){const nearNpc=[typeof swordSeller!=='undefined'&&Math.hypot(playerObj.x-swordSeller.x,playerObj.y-swordSeller.y)<75,typeof boatSeller!=='undefined'&&Math.hypot(playerObj.x-boatSeller.x,playerObj.y-boatSeller.y)<75,typeof factionChanger!=='undefined'&&Math.hypot(playerObj.x-factionChanger.x,playerObj.y-factionChanger.y)<75].some(Boolean);if(!nearNpc)activateObservation();}},true);
+  document.getElementById('mobileHaki')?.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();activateObservation();});
+  document.getElementById('mobileBlink')?.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();showGameMsg('Chạm vị trí muốn tốc biến');const once=ev=>{ev.preventDefault();const r=canvas.getBoundingClientRect();blinkTo((ev.clientX-r.left)*canvas.width/r.width,(ev.clientY-r.top)*canvas.height/r.height);canvas.removeEventListener('pointerdown',once,true)};setTimeout(()=>canvas.addEventListener('pointerdown',once,true),50);});
 })();
 </script>
 
