@@ -1008,12 +1008,12 @@
         <div class="npc-choice-grid">
           <button class="npc-choice" id="boatGoIsland1">Đảo 1<small>Đảo Khởi Đầu · quái và boss cũ</small></button>
           <button class="npc-choice" id="boatGoIsland2">Đảo 2<small>Đảo Rừng · Lv.25+</small></button>
-          <button class="npc-choice" id="boatGoIsland3">Đảo 3<small>Đảo Hắc Tử · khu vực mới</small></button><button class="npc-choice" id="boatGoIsland4">Đảo 4<small>Yêu cầu Lv.60 · +15% damage</small></button>
-<button class="npc-choice" id="boatGoIsland5">Đảo 5<small>Yêu cầu Lv.80 · +30% damage</small></button>
-<button class="npc-choice" id="boatGoIsland6">Đảo 6<small>Yêu cầu Lv.100 · +45% damage</small></button>
-<button class="npc-choice" id="boatGoIsland7">Đảo 7<small>Yêu cầu Lv.125 · +60% damage</small></button>
-<button class="npc-choice" id="boatGoIsland8">Đảo 8<small>Yêu cầu Lv.150 · +75% damage</small></button>
-<button class="npc-choice" id="boatGoIsland9">Đảo 9<small>Yêu cầu Lv.150 · PVP</small></button>
+          <button class="npc-choice" id="boatGoIsland3">Đảo 3<small>Đảo Hắc Tử · khu vực mới</small></button><button class="npc-choice" id="boatGoIsland4">Đảo 4 — Nghĩa Địa<small>Yêu cầu Lv.60 · quái/boss +15% HP</small></button>
+<button class="npc-choice" id="boatGoIsland5">Đảo 5 — Thành Phố Đáy Biển<small>Yêu cầu Lv.80 · quái/boss +30% HP</small></button>
+<button class="npc-choice" id="boatGoIsland6">Đảo 6 — Hắc Cửu Tử<small>Yêu cầu Lv.100 · quái/boss +45% HP</small></button>
+<button class="npc-choice" id="boatGoIsland7">Đảo 7 — Đảo Trời<small>Yêu cầu Lv.125 · quái/boss +60% HP</small></button>
+<button class="npc-choice" id="boatGoIsland8">Đảo 8 — TP Đáy Biển Tối<small>Yêu cầu Lv.150 · nhiệm vụ Admin</small></button>
+<button class="npc-choice" id="boatGoIsland9">Đảo 9 — Đấu Trường<small>Yêu cầu Lv.150 · PVP</small></button>
         </div>
         <button class="npc-modal-close" id="closeBoatNpc">Đóng</button>
       </div>
@@ -3136,6 +3136,202 @@ body.mobile-mode #safeZoneNpcHint{
     }
   };
   refreshTridentShop();updateHUD();
+})();
+</script>
+
+
+
+<!-- ===== PATCH ĐẢO 4-9 + ADMIN QUEST ===== -->
+<div class="npc-modal" id="adminNpcModal">
+  <div class="npc-modal-box" style="border-color:#36d8ff;box-shadow:0 0 35px rgba(40,210,255,.2)">
+    <div class="npc-modal-title">🛡️ admin — Thử thách Đảo 8</div>
+    <div class="npc-modal-sub" id="adminQuestText">Hạ 50 quái trên Đảo 8. Hoàn thành sẽ tự động dịch chuyển tới Dimension Admin.</div>
+    <div class="npc-choice-grid">
+      <button class="npc-choice" id="acceptAdminQuest">Nhận nhiệm vụ<small>Kill 50 quái Đảo 8</small></button>
+      <button class="npc-choice" id="enterAdminBoss">Vào đánh Boss Admin<small>Boss 60.000 HP · 600 damage</small></button>
+    </div>
+    <button class="npc-modal-close" id="closeAdminNpc">Đóng</button>
+  </div>
+</div>
+<script id="islands-admin-patch">
+(()=>{
+  const PATCH_INFO={
+    farm1:{name:'Đảo 4 — Nghĩa Địa',tier:1,need:60},
+    farm2:{name:'Đảo 5 — Thành Phố Đáy Biển',tier:2,need:80},
+    farm3:{name:'Đảo 6 — Hắc Cửu Tử',tier:3,need:100},
+    farm4:{name:'Đảo 7 — Đảo Trời',tier:4,need:125},
+    farm5:{name:'Đảo 8 — TP Đáy Biển Tối',tier:5,need:150},
+    pvp:{name:'Đảo 9 — Đấu Trường',tier:0,need:150}
+  };
+  const ids={4:'farm1',5:'farm2',6:'farm3',7:'farm4',8:'farm5',9:'pvp'};
+  const adminPos={x:760,y:390,r:23};
+  let adminAttackAt=0;
+
+  // Chặn listener cũ và đi đảo bằng level đúng.
+  for(let i=4;i<=9;i++){
+    const b=document.getElementById('boatGoIsland'+i); if(!b) continue;
+    b.addEventListener('click',ev=>{
+      ev.preventDefault(); ev.stopImmediatePropagation();
+      const id=ids[i], cfg=PATCH_INFO[id], p=loadProgress();
+      if((p.level||1)<cfg.need){showGameMsg('Cần Level '+cfg.need+' để tới '+cfg.name);return;}
+      boatNpcModal.classList.remove('show');
+      p.island=id; saveProgress(p); currentIsland=id; currentDimension='world';
+      enemies=[];projectiles=[];effects=[];resetArena();setDimension('world');updateHUD();
+      showGameMsg('Đã tới '+cfg.name);
+    },true);
+  }
+
+  // HUD tên đảo + mô tả HP tăng 15% mỗi bậc đảo.
+  const hudBase=updateHUD;
+  updateHUD=function(){
+    hudBase();
+    const cfg=PATCH_INFO[currentIsland];
+    if(cfg){
+      islandText.textContent=cfg.name;
+      islandHint.textContent=currentIsland==='pvp'?'Đấu trường PVP · yêu cầu Lv.150':
+        `Quái và Boss +${cfg.tier*15}% HP · sát thương +${cfg.tier*15}%`;
+      itemIsland.textContent=cfg.name;
+    }
+    updateAdminQuestText();
+  };
+
+  // Sửa scaling: mỗi đảo tăng 15% HP cho cả NPC và Boss.
+  // Wrapper cũ đã tăng 5%; chia phần cũ rồi áp lại đúng 15%.
+  const spawnBase=spawnEnemy;
+  spawnEnemy=function(isBoss=false,isHiddenBoss=false){
+    const e=spawnBase(isBoss,isHiddenBoss);
+    const cfg=PATCH_INFO[currentIsland];
+    if(e&&cfg&&currentIsland!=='pvp'&&!e.adminBoss){
+      const oldFactor=1+cfg.tier*0.05;
+      const newFactor=1+cfg.tier*0.15;
+      e.maxHp=Math.round(e.maxHp/oldFactor*newFactor);
+      e.hp=e.maxHp;
+      e.damage=Math.max(1,Math.round((e.damage||10)*(1+cfg.tier*.15)));
+      e.islandTier=cfg.tier;
+    }
+    return e;
+  };
+
+  function updateAdminQuestText(){
+    const el=document.getElementById('adminQuestText'); if(!el) return;
+    const p=loadProgress(); const q=p.adminQuest||{};
+    const done=q.accepted?Math.max(0,(p.npc||0)-(q.startNpc||0)):0;
+    el.textContent=q.completed?'Đã hoàn thành 50/50. Có thể vào Dimension Admin.':
+      q.accepted?`Tiến độ: ${Math.min(done,50)}/50 quái. Chỉ tính quái hạ sau khi nhận nhiệm vụ.`:
+      'Hạ 50 quái trên Đảo 8. Hoàn thành sẽ tự động dịch chuyển tới Dimension Admin.';
+  }
+  function saveAdminQuest(p){p.adminQuest=p.adminQuest||{accepted:false,startNpc:0,completed:false,bossDefeated:false};saveProgress(p);}
+  function enterAdminDimension(){
+    const p=loadProgress();
+    if(!p.adminQuest?.completed){showGameMsg('Cần hoàn thành nhiệm vụ 50 quái trước');return;}
+    document.getElementById('adminNpcModal').classList.remove('show');
+    currentDimension='hidden';
+    enemies=[];projectiles=[];effects=[];
+    setDimension('hidden');
+    const hp=60000;
+    enemies.push({x:canvas.width-150,y:canvas.height/2,r:50,hp,maxHp:hp,boss:true,hiddenBoss:false,adminBoss:true,speed:38,damage:600});
+    dimensionLabel.textContent='ADMIN DIMENSION';
+    dimensionLabel.classList.add('show');
+    showGameMsg('Boss Admin xuất hiện: 60.000 HP · 600 damage');
+  }
+
+  document.getElementById('acceptAdminQuest').onclick=()=>{
+    const p=loadProgress();
+    if(currentIsland!=='farm5'){showGameMsg('NPC admin chỉ giao nhiệm vụ tại Đảo 8');return;}
+    p.adminQuest=p.adminQuest||{};
+    if(!p.adminQuest.accepted){p.adminQuest={accepted:true,startNpc:p.npc||0,completed:false,bossDefeated:false};saveProgress(p);showGameMsg('Đã nhận nhiệm vụ: hạ 50 quái');}
+    else showGameMsg(p.adminQuest.completed?'Nhiệm vụ đã hoàn thành':'Nhiệm vụ đang thực hiện');
+    updateAdminQuestText();
+  };
+  document.getElementById('enterAdminBoss').onclick=enterAdminDimension;
+  document.getElementById('closeAdminNpc').onclick=()=>document.getElementById('adminNpcModal').classList.remove('show');
+
+  // Theo dõi kill 50 quái và xử lý Boss Admin riêng.
+  const damageBase=damageEnemy;
+  damageEnemy=function(e,dmg){
+    if(e?.adminBoss){
+      e.hp-=dmg;
+      if(e.hp>0)return;
+      const p=loadProgress(); p.boss=(p.boss||0)+1; p.money=(p.money||0)+250000;
+      p.adminQuest=p.adminQuest||{};p.adminQuest.bossDefeated=true;saveProgress(p);gainExp(5000);
+      const idx=enemies.indexOf(e);if(idx>=0)enemies.splice(idx,1);
+      showGameMsg('Đã hạ Boss Admin! +250.000 tiền');updateHUD();
+      setTimeout(()=>{ if(currentDimension==='hidden'&&!enemies.some(x=>x.adminBoss)) enterAdminDimension(); },4000);
+      return;
+    }
+    const wasNpc=e&&!e.boss&&!e.hiddenBoss;
+    damageBase(e,dmg);
+    if(wasNpc&&currentIsland==='farm5'){
+      const p=loadProgress(),q=p.adminQuest;
+      if(q?.accepted&&!q.completed){
+        const progress=Math.max(0,(p.npc||0)-(q.startNpc||0));
+        if(progress>=50){q.completed=true;saveProgress(p);showGameMsg('Đủ 50 quái! Đang dịch chuyển tới Boss Admin...');setTimeout(enterAdminDimension,900);}
+        else updateAdminQuestText();
+      }
+    }
+  };
+
+  // Boss Admin đánh 600 damage; chết vẫn hồi sinh trong dimension vì dùng currentDimension='hidden'.
+  const updateBase=update;
+  update=function(dt){
+    updateBase(dt);
+    const boss=enemies.find(e=>e.adminBoss);
+    if(boss&&currentDimension==='hidden'){
+      const d=Math.hypot(playerObj.x-boss.x,playerObj.y-boss.y),now=performance.now();
+      if(d<230&&now>=adminAttackAt){
+        adminAttackAt=now+3000;
+        effects.push({type:'ring',x:playerObj.x,y:playerObj.y,life:.7,max:.7,size:95});
+        setTimeout(()=>{if(currentDimension==='hidden'&&enemies.includes(boss)&&playerObj.hp>0){playerObj.hp-=600;showGameMsg('Boss Admin tung skill: -600 HP');}},420);
+      }
+    }
+  };
+
+  // Vẽ map riêng cho đảo 4-9 và NPC admin ở đảo 8.
+  const drawBase=draw;
+  draw=function(){
+    drawBase();
+    if(currentDimension==='world'&&PATCH_INFO[currentIsland]){
+      ctx.save();
+      // Lớp trang trí phủ trên nền cũ để mỗi đảo có bản sắc riêng.
+      if(currentIsland==='farm1'){
+        ctx.fillStyle='rgba(18,20,26,.48)';ctx.fillRect(0,0,canvas.width,canvas.height);
+        for(let i=0;i<14;i++){let x=70+(i*137)%820,y=85+(i*79)%390;ctx.fillStyle='#777';ctx.fillRect(x-8,y-20,16,30);ctx.fillStyle='#444';ctx.fillRect(x-12,y-24,24,6);}
+      }else if(currentIsland==='farm2'){
+        ctx.fillStyle='rgba(0,55,85,.45)';ctx.fillRect(0,0,canvas.width,canvas.height);
+        for(let i=0;i<22;i++){let x=(i*167)%920,y=(i*91)%540;ctx.strokeStyle='#59d8ff';ctx.beginPath();ctx.arc(x,y,5+(i%4)*4,0,Math.PI*2);ctx.stroke();}
+      }else if(currentIsland==='farm3'){
+        ctx.fillStyle='rgba(20,0,32,.55)';ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.strokeStyle='#8e35cc';for(let i=0;i<9;i++){ctx.beginPath();ctx.moveTo(i*120,0);ctx.lineTo(920-i*70,540);ctx.stroke();}
+      }else if(currentIsland==='farm4'){
+        ctx.fillStyle='rgba(90,170,240,.34)';ctx.fillRect(0,0,canvas.width,canvas.height);
+        for(let i=0;i<12;i++){let x=(i*181)%920,y=60+(i*67)%410;ctx.fillStyle='rgba(255,255,255,.8)';ctx.beginPath();ctx.arc(x,y,22,0,Math.PI*2);ctx.arc(x+25,y+5,17,0,Math.PI*2);ctx.fill();}
+      }else if(currentIsland==='farm5'){
+        ctx.fillStyle='rgba(0,25,50,.48)';ctx.fillRect(0,0,canvas.width,canvas.height);
+        for(let i=0;i<10;i++){let x=35+i*92;ctx.fillStyle=i%2?'#174f72':'#0d3855';ctx.fillRect(x,310-(i%3)*35,65,210);ctx.strokeStyle='#42cfff';ctx.strokeRect(x,310-(i%3)*35,65,210);}
+      }else if(currentIsland==='pvp'){
+        ctx.strokeStyle='#ffcc55';ctx.lineWidth=5;ctx.strokeRect(80,65,760,410);ctx.fillStyle='rgba(120,20,20,.18)';ctx.fillRect(80,65,760,410);
+      }
+      if(currentIsland==='farm5'){
+        ctx.beginPath();ctx.arc(adminPos.x,adminPos.y,adminPos.r,0,Math.PI*2);ctx.fillStyle='#20bfe8';ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
+        ctx.fillStyle='#fff';ctx.font='11px monospace';ctx.textAlign='center';ctx.fillText('admin',adminPos.x,adminPos.y-32);ctx.fillText('Nhiệm vụ 50 quái · nhấn E',adminPos.x,adminPos.y+42);
+      }
+      ctx.restore();
+    }
+    const boss=enemies.find(e=>e.adminBoss);
+    if(boss){ctx.save();ctx.fillStyle='#fff';ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.fillText('BOSS ADMIN · 600 DAMAGE',boss.x,boss.y+70);ctx.restore();}
+  };
+
+  // Click / phím E mở NPC admin.
+  canvas.addEventListener('mousedown',ev=>{
+    if(currentIsland!=='farm5'||currentDimension!=='world')return;
+    const r=canvas.getBoundingClientRect(),x=(ev.clientX-r.left)*canvas.width/r.width,y=(ev.clientY-r.top)*canvas.height/r.height;
+    if(Math.hypot(x-adminPos.x,y-adminPos.y)<48){ev.preventDefault();ev.stopImmediatePropagation();updateAdminQuestText();document.getElementById('adminNpcModal').classList.add('show');}
+  },true);
+  window.addEventListener('keydown',ev=>{
+    if(ev.key.toLowerCase()==='e'&&currentIsland==='farm5'&&currentDimension==='world'&&Math.hypot(playerObj.x-adminPos.x,playerObj.y-adminPos.y)<80){ev.preventDefault();ev.stopImmediatePropagation();updateAdminQuestText();document.getElementById('adminNpcModal').classList.add('show');}
+  },true);
+
+  updateHUD();
 })();
 </script>
 
