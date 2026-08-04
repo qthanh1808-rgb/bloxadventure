@@ -2527,6 +2527,24 @@ body.mobile-mode .skill-panel{
 .gacha-result{margin-top:10px;padding:9px;border:1px solid #4e4e63;background:#11131a;border-radius:6px;font-size:11px;line-height:1.55}
 .gacha-owned{max-height:130px;overflow:auto;margin-top:8px;font-size:10px;color:#bbb}
 .dogblade-img{width:100%;height:150px;object-fit:contain;background:#292929;border:1px solid #555;border-radius:7px}
+.style-shop-box{width:520px;max-width:94%;background:#101419;border:1px solid #d7b56d;border-radius:9px;padding:18px;box-shadow:0 0 36px rgba(255,205,100,.16)}
+.style-shop-title{font-size:18px;font-weight:800;color:#ffe2a0;margin-bottom:4px}
+.style-shop-sub{color:#b9aa8c;font-size:11px;margin-bottom:14px;line-height:1.5}
+.style-shop-list{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.style-shop-item{border:1px solid #54482f;background:#100e0a;border-radius:7px;padding:10px;text-align:center}
+.style-shop-icon{height:92px;display:flex;align-items:center;justify-content:center;border:1px dashed #6b5b38;background:linear-gradient(145deg,#18130b,#0e0c09);font-size:42px;margin-bottom:8px}
+.style-shop-item b{display:block;color:#ffe2a0;font-size:13px}
+.style-shop-item small{display:block;color:#a8997b;font-size:9px;line-height:1.45;min-height:40px;margin-top:5px}
+.style-shop-item button{width:100%;margin-top:8px;padding:7px;border:1px solid #77643d;background:#29200f;color:#ffe2a0;border-radius:4px;cursor:pointer;font-family:inherit}
+.style-shop-item button:disabled{opacity:.35;cursor:not-allowed}
+.gacha-popup-box{width:360px;max-width:92%;background:#111113;border:1px solid #6c5cff;border-radius:9px;padding:20px;text-align:center;box-shadow:0 0 38px rgba(100,80,255,.2)}
+.gacha-popup-title{font-size:17px;font-weight:800;color:#d8d2ff;margin-bottom:8px}
+.gacha-popup-text{font-size:11px;color:#bbb;line-height:1.65;margin-bottom:12px}
+.gacha-popup-actions{display:flex;gap:10px;margin-top:13px}
+.gacha-popup-actions button{flex:1;padding:9px;border-radius:5px;cursor:pointer;font-family:inherit;border:1px solid #555}
+.gacha-popup-actions .close-gacha{background:#111;color:#aaa}
+.gacha-popup-actions .reroll-gacha{background:#5b4cff;color:#fff;border-color:#8b80ff}
+@media(max-width:600px){.style-shop-list{grid-template-columns:1fr}.style-shop-icon{height:62px}.style-shop-item small{min-height:0}}
 body.mobile-mode .extra-npc-bar{top:48px;max-width:78vw}
 body.mobile-mode .extra-npc-btn{padding:5px 7px;font-size:8px}
 @media(max-width:600px){
@@ -2542,26 +2560,41 @@ body.mobile-mode .extra-npc-btn{padding:5px 7px;font-size:8px}
 </div>
 
 <div class="npc-modal" id="styleNpcModal">
-  <div class="npc-modal-box">
-    <div class="npc-modal-title">🥋 Tân Bái Dán — Bảng Equip Võ</div>
-    <div class="npc-modal-sub">Chọn và equip Võ V1, V2 hoặc V3 đã mở khóa. Không mất tiến trình.</div>
-    <div class="npc-choice-grid">
-      <button class="npc-choice" data-style-version="1">Võ V1<small>Bản cơ bản</small></button>
-      <button class="npc-choice" data-style-version="2">Võ V2<small>Cần mở khóa Võ V2</small></button>
-      <button class="npc-choice" data-style-version="3">Võ V3<small>Cần mở khóa Võ V3</small></button>
+  <div class="style-shop-box">
+    <div class="style-shop-title">🥋 Tân Bái Dán — Cửa hàng Võ</div>
+    <div class="style-shop-sub">Giao diện bán võ giống shop kiếm. Chọn Võ V1, V2 hoặc V3 đã mở khóa để trang bị.</div>
+    <div class="style-shop-list">
+      <div class="style-shop-item">
+        <div class="style-shop-icon">🥋</div>
+        <b>Võ V1</b><small>Phiên bản cơ bản.<br>Luôn có sẵn.</small>
+        <button data-style-version="1">Trang bị Võ V1</button>
+      </div>
+      <div class="style-shop-item">
+        <div class="style-shop-icon">🔥</div>
+        <b>Võ V2</b><small>Sức mạnh nâng cấp.<br>Cần hoàn thành nhiệm vụ V2.</small>
+        <button data-style-version="2">Trang bị Võ V2</button>
+      </div>
+      <div class="style-shop-item">
+        <div class="style-shop-icon">⚡</div>
+        <b>Võ V3</b><small>Phiên bản tối thượng.<br>Cần hoàn thành nhiệm vụ V3.</small>
+        <button data-style-version="3">Trang bị Võ V3</button>
+      </div>
     </div>
-    <button class="npc-modal-close" data-close-extra="styleNpcModal">Đóng</button>
+    <div class="weapon-state" id="styleShopState">Đang dùng: Võ V1</div>
+    <button class="shop-close" data-close-extra="styleNpcModal">Đóng</button>
   </div>
 </div>
 
 <div class="npc-modal" id="gachaNpcModal">
-  <div class="npc-modal-box">
-    <div class="npc-modal-title">🎰 anti vng — Gacha Buff</div>
-    <div class="npc-modal-sub">15.000 tiền/lượt. Mỗi lượt quay nhận 2 kết quả. Mỗi buff thường có tỷ lệ 7,6%; Dog Blade 1,6%; ba đồ trang trí mỗi món 2,4%.</div>
-    <button class="npc-choice" id="rollGachaBtn">Quay 2 phần thưởng<small>Giá 15.000 tiền</small></button>
+  <div class="gacha-popup-box">
+    <div class="gacha-popup-title">🎰 Kết quả Anti VNG</div>
+    <div class="gacha-popup-text">Đã trừ <b>15.000 tiền</b> cho lượt quay này.</div>
     <div class="gacha-result" id="gachaResult">Chưa quay.</div>
     <div class="gacha-owned" id="gachaOwned"></div>
-    <button class="npc-modal-close" data-close-extra="gachaNpcModal">Đóng</button>
+    <div class="gacha-popup-actions">
+      <button class="close-gacha" id="closeGachaResult">Đóng</button>
+      <button class="reroll-gacha" id="rollGachaBtn">Quay tiếp · 15K</button>
+    </div>
   </div>
 </div>
 
@@ -2727,8 +2760,20 @@ body.mobile-mode .extra-npc-btn{padding:5px 7px;font-size:8px}
   }
 
   function openModal(id){document.getElementById(id)?.classList.add('show')}
+  function refreshStyleShop(){
+    const p=loadProgress();
+    const state=document.getElementById('styleShopState');
+    if(state)state.textContent='Đang dùng: Võ V'+(p.activeFightingVersion||1);
+    document.querySelectorAll('[data-style-version]').forEach(button=>{
+      const v=Number(button.dataset.styleVersion);
+      const locked=(v===2&&!p.fightingV2)||(v===3&&!p.fightingV3);
+      button.disabled=locked;
+      button.textContent=locked?'Chưa mở khóa':'Trang bị Võ V'+v;
+    });
+  }
   document.getElementById('openStyleNpc')?.addEventListener('click',()=>{
     document.querySelectorAll('.npc-modal.show').forEach(m=>m.classList.remove('show'));
+    refreshStyleShop();
     openModal('styleNpcModal');
   });
   document.getElementById('openEquipNpc')?.addEventListener('click',()=>{refreshEquip();openModal('equipNpcModal')});
@@ -2738,7 +2783,7 @@ body.mobile-mode .extra-npc-btn{padding:5px 7px;font-size:8px}
     const v=Number(b.dataset.styleVersion),p=loadProgress();
     if(v===2&&!p.fightingV2){msg('Chưa mở khóa Võ V2');return}
     if(v===3&&!p.fightingV3){msg('Chưa mở khóa Võ V3');return}
-    p.activeFightingVersion=v;saveProgress(p);updateHUD();msg('Đã đổi sang Võ V'+v);
+    p.activeFightingVersion=v;saveProgress(p);updateHUD();refreshStyleShop();msg('Đã đổi sang Võ V'+v);
   }));
 
   function drawReward(){
@@ -2774,18 +2819,27 @@ body.mobile-mode .extra-npc-btn{padding:5px 7px;font-size:8px}
 
   function performAntiGacha(){
     const p=loadProgress();
-    if((p.money||0)<15000){msg('Không đủ 15.000 tiền để gacha');return}
+    if((p.money||0)<15000){
+      msg('Không đủ 15.000 tiền để quay Anti VNG');
+      document.getElementById('gachaNpcModal')?.classList.remove('show');
+      return;
+    }
     p.money-=15000;
     const a=drawReward(),b=drawReward();
     const names=[applyReward(a,p),applyReward(b,p)];
     saveProgress(p);updateHUD();refreshGachaOwned();
     const resultEl=document.getElementById('gachaResult');
-    if(resultEl)resultEl.innerHTML='<b>Kết quả:</b><br>1. '+names[0]+'<br>2. '+names[1];
-    msg('🎰 Gacha nhận được: '+names[0]+' và '+names[1]);
+    if(resultEl)resultEl.innerHTML='<b>Bạn đã nhận được:</b><br>1. '+names[0]+'<br>2. '+names[1]+'<br><small>Còn lại: '+(p.money||0).toLocaleString('vi-VN')+' tiền</small>';
+    document.querySelectorAll('.npc-modal.show').forEach(m=>m.classList.remove('show'));
+    openModal('gachaNpcModal');
+    msg('🎰 Đã trừ 15.000 tiền và nhận phần thưởng');
   }
 
   document.getElementById('openGachaNpc')?.addEventListener('click',performAntiGacha);
   document.getElementById('rollGachaBtn')?.addEventListener('click',performAntiGacha);
+  document.getElementById('closeGachaResult')?.addEventListener('click',()=>{
+    document.getElementById('gachaNpcModal')?.classList.remove('show');
+  });
 
   function refreshEquip(){
     const p=loadProgress(),names={none:'Không',wreath:'Vòng hoa',snake:'Rắn độc',phoenix:'Phượng hoàng lửa'};
