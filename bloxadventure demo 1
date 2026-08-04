@@ -2,7 +2,11 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<base href="./">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0a0a0a">
+<meta name="description" content="DevAuth Blox Fruits Adventure - browser game">
 <title>DevAuth // Blox Fruits Adventure</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
 <style>
@@ -2173,6 +2177,7 @@ canvas.addEventListener('mousedown',e=>{
   useM1();
 });
 window.addEventListener('keydown',e=>{
+  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) e.preventDefault();
   keys[e.key.toLowerCase()]=true;
   if(e.repeat) return;
   if(e.key.toLowerCase()==='z') useZ();
@@ -2192,6 +2197,9 @@ window.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
 
 /* Tự vào lại game khi mở link */
 window.addEventListener('load',()=>{
+  if(typeof L==='undefined'){
+    console.warn('Leaflet CDN chưa tải được; phần game Canvas vẫn có thể hoạt động.');
+  }
   if(localStorage.getItem('devauth:loggedIn')==='true' && localStorage.getItem('devauth:currentUser')){
     showDeviceScreen();
   }
