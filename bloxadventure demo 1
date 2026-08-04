@@ -2543,8 +2543,8 @@ body.mobile-mode .extra-npc-btn{padding:5px 7px;font-size:8px}
 
 <div class="npc-modal" id="styleNpcModal">
   <div class="npc-modal-box">
-    <div class="npc-modal-title">🥋 Tân Bái Dán — Đổi Võ</div>
-    <div class="npc-modal-sub">Chọn Võ V1, V2 hoặc V3 đã mở khóa. Không mất tiến trình.</div>
+    <div class="npc-modal-title">🥋 Tân Bái Dán — Bảng Equip Võ</div>
+    <div class="npc-modal-sub">Chọn và equip Võ V1, V2 hoặc V3 đã mở khóa. Không mất tiến trình.</div>
     <div class="npc-choice-grid">
       <button class="npc-choice" data-style-version="1">Võ V1<small>Bản cơ bản</small></button>
       <button class="npc-choice" data-style-version="2">Võ V2<small>Cần mở khóa Võ V2</small></button>
@@ -2727,8 +2727,10 @@ body.mobile-mode .extra-npc-btn{padding:5px 7px;font-size:8px}
   }
 
   function openModal(id){document.getElementById(id)?.classList.add('show')}
-  document.getElementById('openStyleNpc')?.addEventListener('click',()=>openModal('styleNpcModal'));
-  document.getElementById('openGachaNpc')?.addEventListener('click',()=>{refreshGachaOwned();openModal('gachaNpcModal')});
+  document.getElementById('openStyleNpc')?.addEventListener('click',()=>{
+    document.querySelectorAll('.npc-modal.show').forEach(m=>m.classList.remove('show'));
+    openModal('styleNpcModal');
+  });
   document.getElementById('openEquipNpc')?.addEventListener('click',()=>{refreshEquip();openModal('equipNpcModal')});
   document.querySelectorAll('[data-close-extra]').forEach(b=>b.addEventListener('click',()=>document.getElementById(b.dataset.closeExtra)?.classList.remove('show')));
 
@@ -2770,16 +2772,20 @@ body.mobile-mode .extra-npc-btn{padding:5px 7px;font-size:8px}
     el.innerHTML='<b>Đã có:</b><br>'+(buffs.concat(items).join('<br>')||'Chưa có buff/item.');
   }
 
-  document.getElementById('rollGachaBtn')?.addEventListener('click',()=>{
+  function performAntiGacha(){
     const p=loadProgress();
-    if((p.money||0)<15000){msg('Không đủ 15.000 tiền');return}
+    if((p.money||0)<15000){msg('Không đủ 15.000 tiền để gacha');return}
     p.money-=15000;
     const a=drawReward(),b=drawReward();
     const names=[applyReward(a,p),applyReward(b,p)];
     saveProgress(p);updateHUD();refreshGachaOwned();
-    document.getElementById('gachaResult').innerHTML='<b>Kết quả:</b><br>1. '+names[0]+'<br>2. '+names[1];
-    msg('Đã quay Gacha Buff!');
-  });
+    const resultEl=document.getElementById('gachaResult');
+    if(resultEl)resultEl.innerHTML='<b>Kết quả:</b><br>1. '+names[0]+'<br>2. '+names[1];
+    msg('🎰 Gacha nhận được: '+names[0]+' và '+names[1]);
+  }
+
+  document.getElementById('openGachaNpc')?.addEventListener('click',performAntiGacha);
+  document.getElementById('rollGachaBtn')?.addEventListener('click',performAntiGacha);
 
   function refreshEquip(){
     const p=loadProgress(),names={none:'Không',wreath:'Vòng hoa',snake:'Rắn độc',phoenix:'Phượng hoàng lửa'};
