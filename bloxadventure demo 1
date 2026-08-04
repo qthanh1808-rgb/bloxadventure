@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- GitHub Pages compatible: static single-file build -->
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
@@ -3622,6 +3623,206 @@ body.mobile-mode #safeZoneNpcHint{
   window.goBloxIsland=()=>showGameMsg('Hãy tới NPC nexx8n để chọn đảo');
 
   renderHaki();
+})();
+</script>
+
+
+<script>
+/* ===== HỆ THỐNG CHỌN MAP NEXX8N — BẢN GITHUB PAGES ===== */
+(() => {
+  "use strict";
+
+  const MAPS = [
+    { no: 1, id: "starter", name: "Đảo Khởi Đầu", level: 1 },
+    { no: 2, id: "forest",  name: "Đảo Rừng", level: 25 },
+    { no: 3, id: "void",    name: "Đảo Hắc Tử", level: 40 },
+    { no: 4, id: "farm1",   name: "Đảo Hỏa Sơn", level: 60 },
+    { no: 5, id: "farm2",   name: "Đảo Tuyết Cốc", level: 80 },
+    { no: 6, id: "farm3",   name: "Đảo Thiên Không", level: 100 },
+    { no: 7, id: "farm4",   name: "Đảo Long Địa", level: 125 },
+    { no: 8, id: "farm5",   name: "Đảo Tận Thế", level: 150 },
+    { no: 9, id: "pvp",     name: "Đảo Đấu Trường", level: 150, pvp: true }
+  ];
+
+  const byId = Object.fromEntries(MAPS.map(map => [map.id, map]));
+  const hpMultiplier = map => Math.pow(1.5, map.no - 1);
+  // “Tăng 500% so với đảo trước” = nhận 600% EXP của đảo trước.
+  const expMultiplier = map => Math.pow(6, map.no - 1);
+
+  function progress() {
+    try {
+      return typeof loadProgress === "function"
+        ? loadProgress()
+        : { level: 1, island: "starter" };
+    } catch {
+      return { level: 1, island: "starter" };
+    }
+  }
+
+  function isUnlocked(map, p = progress()) {
+    return Number(p.level || 1) >= map.level;
+  }
+
+  function formatMultiplier(value) {
+    return value >= 1000
+      ? value.toLocaleString("vi-VN", { maximumFractionDigits: 0 })
+      : value.toLocaleString("vi-VN", { maximumFractionDigits: 2 });
+  }
+
+  function refreshNexx8nMenu() {
+    const p = progress();
+    const subtitle = document.querySelector("#boatNpcModal .npc-modal-sub");
+    if (subtitle) {
+      subtitle.textContent =
+        "Chỉ có thể đổi map tại nexx8n. Map chưa mở khóa sẽ được giấu tên bằng ???.";
+    }
+
+    MAPS.forEach(map => {
+      const button = document.getElementById("boatGoIsland" + map.no);
+      if (!button) return;
+
+      const unlocked = isUnlocked(map, p);
+      button.classList.toggle("locked", !unlocked);
+      button.disabled = false;
+      button.dataset.mapId = map.id;
+      button.dataset.mapNumber = String(map.no);
+
+      if (!unlocked) {
+        button.innerHTML =
+          `Đảo ${map.no} — ???<small>??? · Yêu cầu Lv.${map.level}</small>`;
+        button.setAttribute("aria-label", `Đảo ${map.no} chưa mở khóa`);
+      } else {
+        const detail = map.pvp
+          ? "Khu vực PVP"
+          : `HP quái ×${formatMultiplier(hpMultiplier(map))} · EXP ×${formatMultiplier(expMultiplier(map))}`;
+        button.innerHTML =
+          `Đảo ${map.no} — ${map.name}<small>${detail} · Lv.${map.level}+</small>`;
+        button.setAttribute("aria-label", map.name);
+      }
+    });
+  }
+
+  function travelByNexx8n(map) {
+    const p = progress();
+
+    if (!isUnlocked(map, p)) {
+      if (typeof showGameMsg === "function") {
+        showGameMsg(`Map chưa mở khóa — cần Level ${map.level}`);
+      }
+      refreshNexx8nMenu();
+      return;
+    }
+
+    p.island = map.id;
+    if (typeof saveProgress === "function") saveProgress(p);
+
+    if (typeof currentIsland !== "undefined") currentIsland = map.id;
+    if (typeof currentDimension !== "undefined") currentDimension = "world";
+    if (typeof enemies !== "undefined") enemies.length = 0;
+    if (typeof projectiles !== "undefined") projectiles.length = 0;
+    if (typeof effects !== "undefined") effects.length = 0;
+
+    document.getElementById("boatNpcModal")?.classList.remove("show");
+    document.getElementById("dimensionLabel")?.classList.remove("show");
+
+    if (typeof resetArena === "function") resetArena();
+    if (typeof setDimension === "function") setDimension("world");
+    if (typeof updateHUD === "function") updateHUD();
+
+    if (typeof showGameMsg === "function") {
+      showGameMsg(`nexx8n đã đưa bạn tới ${map.name}`);
+    }
+  }
+
+  // Chặn toàn bộ listener cũ của các nút map và bắt buộc đi qua hệ thống nexx8n mới.
+  document.addEventListener("click", event => {
+    const button = event.target.closest('[id^="boatGoIsland"]');
+    if (!button) return;
+
+    const number = Number(button.id.replace("boatGoIsland", ""));
+    const map = MAPS.find(item => item.no === number);
+    if (!map) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+    travelByNexx8n(map);
+  }, true);
+
+  // Khi modal nexx8n mở, cập nhật tên/??? theo level hiện tại.
+  const boatModal = document.getElementById("boatNpcModal");
+  if (boatModal) {
+    new MutationObserver(refreshNexx8nMenu).observe(boatModal, {
+      attributes: true,
+      attributeFilter: ["class"]
+    });
+  }
+
+  // Không cho dùng nút chuyển đảo cũ ngoài NPC.
+  document.querySelectorAll(".island-actions").forEach(node => node.remove());
+
+  // Chuẩn hóa HP quái: mỗi đảo sau bằng 150% HP đảo trước.
+  if (typeof spawnEnemy === "function") {
+    const originalSpawnEnemy = spawnEnemy;
+    spawnEnemy = function(isBoss = false, isHiddenBoss = false) {
+      const result = originalSpawnEnemy.apply(this, arguments);
+      const enemy = (typeof enemies !== "undefined" && enemies.length)
+        ? enemies[enemies.length - 1]
+        : result;
+
+      const map = byId[typeof currentIsland !== "undefined" ? currentIsland : "starter"];
+      if (!enemy || !map || map.pvp || isHiddenBoss || enemy.hiddenBoss || enemy.adminBoss) {
+        return result;
+      }
+
+      const baseHp = (enemy.boss || isBoss) ? 250 : 50;
+      const targetHp = Math.max(1, Math.round(baseHp * hpMultiplier(map)));
+      enemy.maxHp = targetHp;
+      enemy.hp = targetHp;
+      enemy.mapNumber = map.no;
+      enemy.mapHpMultiplier = hpMultiplier(map);
+      enemy.mapExpMultiplier = expMultiplier(map);
+      return result;
+    };
+  }
+
+  // Mỗi đảo tăng 500% EXP so với đảo trước.
+  if (typeof gainExp === "function") {
+    const originalGainExp = gainExp;
+    gainExp = function(amount) {
+      const map = byId[typeof currentIsland !== "undefined" ? currentIsland : "starter"];
+      const multiplier = map && !map.pvp ? expMultiplier(map) : 1;
+      return originalGainExp.call(this, Math.max(0, Math.round(Number(amount || 0) * multiplier)));
+    };
+  }
+
+  // Ghi đè phần hiển thị tên đảo/thông số sau mọi update HUD cũ.
+  if (typeof updateHUD === "function") {
+    const originalUpdateHUD = updateHUD;
+    updateHUD = function() {
+      const result = originalUpdateHUD.apply(this, arguments);
+      const map = byId[typeof currentIsland !== "undefined" ? currentIsland : "starter"];
+      if (!map) return result;
+
+      const islandTextNode = document.getElementById("islandText");
+      const islandHintNode = document.getElementById("islandHint");
+      const itemIslandNode = document.getElementById("itemIsland");
+
+      if (islandTextNode) islandTextNode.textContent = map.name;
+      if (itemIslandNode) itemIslandNode.textContent = map.name;
+      if (islandHintNode) {
+        islandHintNode.textContent = map.pvp
+          ? "Chỉ PVP sau khi thách đấu"
+          : `HP quái ×${formatMultiplier(hpMultiplier(map))} · EXP ×${formatMultiplier(expMultiplier(map))}`;
+      }
+
+      refreshNexx8nMenu();
+      return result;
+    };
+  }
+
+  refreshNexx8nMenu();
+  if (typeof updateHUD === "function") updateHUD();
 })();
 </script>
 
