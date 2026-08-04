@@ -3626,173 +3626,165 @@ body.mobile-mode #safeZoneNpcHint{
 </script>
 
 
-<!-- ===== FINAL FIX: ĐẢO 4 DÙNG NỀN TẢNG ĐẢO 3 ===== -->
-<script id="final-island4-clone-island3">
+<!-- ===== FINAL FIX: ĐẢO 4-9 HOẠT ĐỘNG ỔN ĐỊNH ===== -->
+<script id="final-islands-4-9">
 (() => {
   "use strict";
 
-  const ISLAND4_ID = "farm1";
-  const ISLAND4_LEVEL = 60;
-  const ISLAND4_NAME = "Đảo 4 — Nghĩa Địa";
+  const FINAL_ISLANDS = {
+    4:{id:"farm1", level:60,  name:"Đảo 4 — Nghĩa Địa",            tier:1, theme:"grave"},
+    5:{id:"farm2", level:80,  name:"Đảo 5 — Thành Phố Đáy Biển",   tier:2, theme:"ocean"},
+    6:{id:"farm3", level:100, name:"Đảo 6 — Hắc Cửu Tử",           tier:3, theme:"dark"},
+    7:{id:"farm4", level:120, name:"Đảo 7 — Đảo Trời",             tier:4, theme:"sky"},
+    8:{id:"farm5", level:140, name:"Đảo 8 — Thành Phố Đáy Biển 2", tier:5, theme:"deep"},
+    9:{id:"pvp",   level:160, name:"Đảo 9 — Đấu Trường",           tier:6, theme:"arena"}
+  };
+  const BY_ID = Object.fromEntries(Object.entries(FINAL_ISLANDS).map(([n,c])=>[c.id,{...c,num:Number(n)}]));
 
-  function progressSafe() {
-    try {
-      return typeof loadProgress === "function" ? loadProgress() : {};
-    } catch (error) {
-      console.error(error);
-      return {};
+  function progressSafe(){ try{return loadProgress()}catch(e){console.error(e);return {level:1}} }
+  function notify(t){ if(typeof showGameMsg==='function')showGameMsg(t); }
+
+  function ensureButtons(){
+    const grid=document.querySelector('#boatNpcModal .npc-choice-grid');
+    if(!grid)return;
+    for(let i=4;i<=9;i++){
+      const cfg=FINAL_ISLANDS[i];
+      let b=document.getElementById('boatGoIsland'+i);
+      if(!b){
+        b=document.createElement('button');
+        b.className='npc-choice'; b.id='boatGoIsland'+i; grid.appendChild(b);
+      }
+      const lv=Number(progressSafe().level)||1, unlocked=lv>=cfg.level;
+      b.classList.toggle('locked',!unlocked);
+      b.innerHTML=unlocked
+        ? `${cfg.name}<small>Lv.${cfg.level}+ · HP x${(cfg.num>=5 ? 1.10*Math.pow(2.5,cfg.num-4) : 1.10).toFixed(2)} · Damage x${(cfg.num>=5 ? 1.10*Math.pow(3.5,cfg.num-4) : 1.10).toFixed(2)} · Tiền x${(cfg.num>=5 ? Math.pow(6,cfg.num-4) : 1).toLocaleString('vi-VN')} · EXP x${Math.pow(50,cfg.tier).toLocaleString('vi-VN')}</small>`
+        : `Đảo ${i} — ???<small>Yêu cầu Level ${cfg.level}</small>`;
     }
   }
 
-  function notify(text) {
-    if (typeof showGameMsg === "function") showGameMsg(text);
-    else console.log(text);
+  function travel(num,e){
+    e?.preventDefault();e?.stopImmediatePropagation();
+    const modal=document.getElementById('boatNpcModal');
+    if(!modal?.classList.contains('show')){notify('Hãy tới NPC nexx8n để chọn đảo');return;}
+    const cfg=FINAL_ISLANDS[num],p=progressSafe(),lv=Number(p.level)||1;
+    if(lv<cfg.level){notify(`Chưa đủ Level! Cần Level ${cfg.level} để tới Đảo ${num}.`);ensureButtons();return;}
+    modal.classList.remove('show');
+    currentDimension='world'; if(typeof setDimension==='function')setDimension('world');
+    p.island=cfg.id;saveProgress(p);currentIsland=cfg.id;
+    enemies.length=0;projectiles.length=0;effects.length=0;resetArena();
+    playerObj.x=120;playerObj.y=canvas.height/2;playerObj.hp=playerObj.maxHp;
+    updateHUD();notify('Đã tới '+cfg.name);
   }
 
-  // Xóa chắc chắn toàn bộ đảo 5 trở lên.
-  function removeIsland5Plus() {
-    for (let i = 5; i <= 9; i++) {
-      document.getElementById("boatGoIsland" + i)?.remove();
-      document.getElementById("goIsland" + i)?.remove();
+  function bindButtons(){
+    ensureButtons();
+    for(let i=4;i<=9;i++){
+      const old=document.getElementById('boatGoIsland'+i);if(!old)continue;
+      const fresh=old.cloneNode(true);old.replaceWith(fresh);
+      fresh.addEventListener('click',e=>travel(i,e),true);
     }
   }
 
-  // Đảo 4 dùng quái/boss gốc của Đảo 3, sau đó tăng đúng 10% HP và damage.
-  const spawnIslandBase = spawnEnemy;
-  spawnEnemy = function(isBoss = false, isHiddenBoss = false) {
-    if (currentIsland !== ISLAND4_ID || isHiddenBoss || currentDimension !== "world") {
-      return spawnIslandBase(isBoss, isHiddenBoss);
+  // Tạo quái/boss dựa trên Đảo 3. Đảo 4 giữ mức cũ.
+  // Từ Đảo 5: HP mỗi đảo = x2.5 đảo trước (+150%); damage = x3.5 đảo trước (+250%).
+  const spawnBase=spawnEnemy;
+  spawnEnemy=function(isBoss=false,isHiddenBoss=false){
+    const cfg=BY_ID[currentIsland];
+    if(!cfg||isHiddenBoss||currentDimension!=='world'||cfg.id==='pvp')return spawnBase(isBoss,isHiddenBoss);
+    const real=currentIsland; currentIsland='void'; let e;
+    try{e=spawnBase(isBoss,false)}finally{currentIsland=real}
+    e=e||enemies[enemies.length-1];
+    if(e){
+      const hpFactor=cfg.num>=5 ? 1.10*Math.pow(2.5,cfg.num-4) : 1.10;
+      const damageFactor=cfg.num>=5 ? 1.10*Math.pow(3.5,cfg.num-4) : 1.10;
+      e.maxHp=Math.max(1,Math.round(e.maxHp*hpFactor));e.hp=e.maxHp;
+      e.damage=Math.max(1,Math.round((e.damage||10)*damageFactor));
+      e.finalIsland=cfg.num;
+      e.finalMoneyMultiplier=cfg.num>=5 ? Math.pow(6,cfg.num-4) : 1;
     }
-
-    const realIsland = currentIsland;
-    currentIsland = "void"; // tạo quái/boss y hệt Đảo 3
-    let enemy;
-
-    try {
-      enemy = spawnIslandBase(isBoss, false);
-    } finally {
-      currentIsland = realIsland;
-    }
-
-    enemy = enemy || enemies[enemies.length - 1];
-    if (enemy) {
-      enemy.forest = false;
-      enemy.voidIsland = false;
-      enemy.isIsland4 = true;
-      enemy.maxHp = Math.max(1, Math.round(enemy.maxHp * 1.10));
-      enemy.hp = enemy.maxHp;
-      enemy.damage = Math.max(1, Math.round((enemy.damage || 10) * 1.10));
-    }
-
-    return enemy;
+    return e;
   };
 
-  // Đảo 4 nhận 5000% EXP của Đảo 3 = x50.
-  const gainExpBase = gainExp;
-  gainExp = function(amount) {
-    const multiplier =
-      currentIsland === ISLAND4_ID && currentDimension === "world" ? 50 : 1;
-    return gainExpBase(Math.round(amount * multiplier));
-  };
-
-  // Giao diện/HUD riêng cho Đảo 4.
-  const updateHudBase = updateHUD;
-  updateHUD = function() {
-    updateHudBase();
-
-    const progress = progressSafe();
-    const level = Number(progress.level) || 1;
-    const button = document.getElementById("boatGoIsland4");
-
-    if (button) {
-      const unlocked = level >= ISLAND4_LEVEL;
-      button.classList.toggle("locked", !unlocked);
-      button.innerHTML = unlocked
-        ? `${ISLAND4_NAME}<small>Lv.60+ · Quái/Boss +10% HP & damage · EXP x50</small>`
-        : `Đảo 4 — ???<small>Yêu cầu Level ${ISLAND4_LEVEL}</small>`;
-    }
-
-    if (currentIsland === ISLAND4_ID) {
-      islandText.textContent = ISLAND4_NAME;
-      islandHint.textContent =
-        "Dùng quái và boss Đảo 3 · +10% HP & damage · EXP x50";
-      if (typeof itemIsland !== "undefined" && itemIsland) {
-        itemIsland.textContent = ISLAND4_NAME;
+  // Từ Đảo 5, tiền rơi mỗi đảo = x6 đảo trước (+500%).
+  // Bọc damageEnemy để cộng phần tiền thưởng thêm sau khi quái/boss bị hạ.
+  const damageEnemyMoneyBase=damageEnemy;
+  damageEnemy=function(e,dmg){
+    const wasAlive=e&&e.hp>0;
+    const before=Number(progressSafe().money)||0;
+    const mult=e&&e.finalMoneyMultiplier?Number(e.finalMoneyMultiplier):1;
+    const result=damageEnemyMoneyBase(e,dmg);
+    if(wasAlive&&e&&e.hp<=0&&mult>1&&!e.hiddenBoss&&!e.adminBoss){
+      const p=progressSafe();
+      const baseReward=Math.max(0,(Number(p.money)||0)-before);
+      if(baseReward>0){
+        const extra=Math.round(baseReward*(mult-1));
+        p.money=(Number(p.money)||0)+extra;
+        saveProgress(p);
+        updateHUD();
+        notify(`Thưởng Đảo ${e.finalIsland}: +${extra.toLocaleString('vi-VN')} tiền`);
       }
     }
-
-    removeIsland5Plus();
+    return result;
   };
 
-  function travelToIsland4(event) {
-    event?.preventDefault();
-    event?.stopImmediatePropagation();
+  // Mỗi đảo nhận 5000% EXP so với đảo trước (x50 mỗi bậc).
+  const gainExpBase=gainExp;
+  gainExp=function(amount){
+    const cfg=BY_ID[currentIsland];
+    const mult=cfg&&currentDimension==='world'&&cfg.id!=='pvp'?Math.pow(50,cfg.tier):1;
+    return gainExpBase(Math.round(amount*mult));
+  };
 
-    const modal = document.getElementById("boatNpcModal");
-    if (!modal?.classList.contains("show")) {
-      notify("Hãy tới NPC nexx8n để chọn đảo");
-      return;
+  const hudBase=updateHUD;
+  updateHUD=function(){
+    hudBase();ensureButtons();
+    const cfg=BY_ID[currentIsland];if(!cfg)return;
+    islandText.textContent=cfg.name;
+    islandHint.textContent=cfg.id==='pvp'
+      ? 'Đấu trường chiến đấu · quái thường không xuất hiện'
+      : `Từ Đảo 5: HP +150% · Damage +250% · Tiền +500% mỗi đảo · HP x${(cfg.num>=5 ? 1.10*Math.pow(2.5,cfg.num-4) : 1.10).toFixed(2)} · Damage x${(cfg.num>=5 ? 1.10*Math.pow(3.5,cfg.num-4) : 1.10).toFixed(2)} · Tiền x${(cfg.num>=5 ? Math.pow(6,cfg.num-4) : 1).toLocaleString('vi-VN')} · EXP x${Math.pow(50,cfg.tier).toLocaleString('vi-VN')}`;
+    if(typeof itemIsland!=='undefined'&&itemIsland)itemIsland.textContent=cfg.name;
+  };
+
+  // Không sinh quái tự động tại Đảo 9.
+  const resetBase=resetArena;
+  resetArena=function(){
+    resetBase();
+    if(currentIsland==='pvp'&&currentDimension==='world')enemies.length=0;
+  };
+
+  const drawBase=draw;
+  draw=function(){
+    drawBase(); const cfg=BY_ID[currentIsland];
+    if(!cfg||currentDimension!=='world')return;
+    ctx.save();
+    if(cfg.theme==='grave'){
+      ctx.fillStyle='rgba(12,14,20,.50)';ctx.fillRect(0,0,canvas.width,canvas.height);
+      for(let i=0;i<14;i++){let x=60+(i*137)%830,y=90+(i*73)%390;ctx.fillStyle='#777';ctx.fillRect(x,y,16,30);ctx.fillStyle='#444';ctx.fillRect(x-4,y-5,24,6)}
+    }else if(cfg.theme==='ocean'){
+      ctx.fillStyle='rgba(0,70,110,.48)';ctx.fillRect(0,0,canvas.width,canvas.height);
+      for(let i=0;i<24;i++){let x=(i*163)%920,y=(i*89)%540;ctx.strokeStyle='#65ddff';ctx.beginPath();ctx.arc(x,y,5+(i%4)*3,0,Math.PI*2);ctx.stroke()}
+    }else if(cfg.theme==='dark'){
+      ctx.fillStyle='rgba(28,0,45,.58)';ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.strokeStyle='#9a42e8';for(let i=0;i<10;i++){ctx.beginPath();ctx.moveTo(i*105,0);ctx.lineTo(920-i*55,540);ctx.stroke()}
+    }else if(cfg.theme==='sky'){
+      ctx.fillStyle='rgba(90,180,255,.36)';ctx.fillRect(0,0,canvas.width,canvas.height);
+      for(let i=0;i<12;i++){let x=(i*181)%920,y=55+(i*67)%400;ctx.fillStyle='rgba(255,255,255,.85)';ctx.beginPath();ctx.arc(x,y,22,0,Math.PI*2);ctx.arc(x+25,y+5,17,0,Math.PI*2);ctx.fill()}
+    }else if(cfg.theme==='deep'){
+      ctx.fillStyle='rgba(0,22,52,.60)';ctx.fillRect(0,0,canvas.width,canvas.height);
+      for(let i=0;i<10;i++){let x=35+i*92;ctx.fillStyle=i%2?'#174f72':'#0d3855';ctx.fillRect(x,300-(i%3)*38,65,220);ctx.strokeStyle='#42cfff';ctx.strokeRect(x,300-(i%3)*38,65,220)}
+    }else if(cfg.theme==='arena'){
+      ctx.fillStyle='rgba(120,15,15,.28)';ctx.fillRect(70,55,780,430);ctx.strokeStyle='#ffb43b';ctx.lineWidth=6;ctx.strokeRect(70,55,780,430);
+      ctx.fillStyle='#fff';ctx.font='bold 18px monospace';ctx.textAlign='center';ctx.fillText('ĐẤU TRƯỜNG ĐẢO 9',canvas.width/2,88);
     }
+    ctx.restore();
+  };
 
-    const progress = progressSafe();
-    const level = Number(progress.level) || 1;
-
-    if (level < ISLAND4_LEVEL) {
-      notify(`Chưa đủ Level! Cần Level ${ISLAND4_LEVEL} để qua Đảo 4.`);
-      updateHUD();
-      return;
-    }
-
-    modal.classList.remove("show");
-    currentDimension = "world";
-    if (typeof setDimension === "function") setDimension("world");
-
-    progress.island = ISLAND4_ID;
-    saveProgress(progress);
-    currentIsland = ISLAND4_ID;
-
-    enemies.length = 0;
-    projectiles.length = 0;
-    effects.length = 0;
-
-    resetArena();
-
-    playerObj.x = 120;
-    playerObj.y = canvas.height / 2;
-    playerObj.hp = playerObj.maxHp;
-
-    updateHUD();
-    notify("Đã tới " + ISLAND4_NAME);
-  }
-
-  function installIsland4Button() {
-    removeIsland5Plus();
-
-    const oldButton = document.getElementById("boatGoIsland4");
-    if (!oldButton) return;
-
-    // Xóa toàn bộ listener đảo 4 cũ gây xung đột.
-    const cleanButton = oldButton.cloneNode(true);
-    oldButton.replaceWith(cleanButton);
-    cleanButton.addEventListener("click", travelToIsland4, true);
-
-    updateHUD();
-  }
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", installIsland4Button, { once: true });
-  } else {
-    installIsland4Button();
-  }
-
-  setInterval(() => {
-    removeIsland5Plus();
-    if (document.getElementById("boatNpcModal")?.classList.contains("show")) {
-      updateHUD();
-    }
-  }, 1000);
+  const desc=document.getElementById('nexx8nIslandDescription');
+  if(desc)desc.textContent='Chọn Đảo 1–9. Đảo chưa đủ level sẽ hiện ???.';
+  bindButtons();updateHUD();
+  setInterval(()=>{ensureButtons();},1200);
 })();
 </script>
-
 </body>
 </html>
