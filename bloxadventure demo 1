@@ -1004,11 +1004,11 @@
     <div class="npc-modal" id="boatNpcModal">
       <div class="npc-modal-box">
         <div class="npc-modal-title">🚤 nexx8n — Người lái thuyền</div>
-        <div class="npc-modal-sub" id="nexx8nIslandDescription">Chọn đảo muốn đi. Đảo 4 yêu cầu Level 60.</div>
+        <div class="npc-modal-sub" id="nexx8nIslandDescription">Giữ Đảo 1–4. Đảo 4 yêu cầu Level 60.</div>
         <div class="npc-choice-grid">
           <button class="npc-choice" id="boatGoIsland1">Đảo 1<small>Đảo Khởi Đầu · quái và boss cũ</small></button>
           <button class="npc-choice" id="boatGoIsland2">Đảo 2<small>Đảo Rừng · Lv.25+</small></button>
-          <button class="npc-choice" id="boatGoIsland3">Đảo 3<small>Đảo Hắc Tử · khu vực mới</small></button><button class="npc-choice" id="boatGoIsland4">Đảo 4 — Nghĩa Địa<small>Yêu cầu Lv.60 · quái/boss +15% HP</small></button>
+          <button class="npc-choice" id="boatGoIsland3">Đảo 3<small>Đảo Hắc Tử · khu vực mới</small></button><button class="npc-choice" id="boatGoIsland4">Đảo 4 — ???<small>Yêu cầu Level 60 để mở khóa</small></button>
 
 
 
@@ -3626,106 +3626,171 @@ body.mobile-mode #safeZoneNpcHint{
 </script>
 
 
-<!-- ===== PATCH GIỮ ĐẢO 1-4, XÓA ĐẢO 5 TRỞ LÊN ===== -->
-<script id="keep-islands-1-to-4-patch">
+<!-- ===== FINAL FIX: ĐẢO 4 DÙNG NỀN TẢNG ĐẢO 3 ===== -->
+<script id="final-island4-clone-island3">
 (() => {
   "use strict";
 
+  const ISLAND4_ID = "farm1";
   const ISLAND4_LEVEL = 60;
   const ISLAND4_NAME = "Đảo 4 — Nghĩa Địa";
 
-  function getProgressSafe() {
+  function progressSafe() {
     try {
       return typeof loadProgress === "function" ? loadProgress() : {};
     } catch (error) {
-      console.error("Không đọc được tiến trình:", error);
+      console.error(error);
       return {};
     }
   }
 
-  function showMsg(text) {
+  function notify(text) {
     if (typeof showGameMsg === "function") showGameMsg(text);
     else console.log(text);
   }
 
+  // Xóa chắc chắn toàn bộ đảo 5 trở lên.
   function removeIsland5Plus() {
     for (let i = 5; i <= 9; i++) {
-      document.getElementById(`boatGoIsland${i}`)?.remove();
-      document.getElementById(`goIsland${i}`)?.remove();
+      document.getElementById("boatGoIsland" + i)?.remove();
+      document.getElementById("goIsland" + i)?.remove();
     }
   }
 
-  function refreshIsland4Button() {
-    removeIsland5Plus();
+  // Đảo 4 dùng quái/boss gốc của Đảo 3, sau đó tăng đúng 10% HP và damage.
+  const spawnIslandBase = spawnEnemy;
+  spawnEnemy = function(isBoss = false, isHiddenBoss = false) {
+    if (currentIsland !== ISLAND4_ID || isHiddenBoss || currentDimension !== "world") {
+      return spawnIslandBase(isBoss, isHiddenBoss);
+    }
 
+    const realIsland = currentIsland;
+    currentIsland = "void"; // tạo quái/boss y hệt Đảo 3
+    let enemy;
+
+    try {
+      enemy = spawnIslandBase(isBoss, false);
+    } finally {
+      currentIsland = realIsland;
+    }
+
+    enemy = enemy || enemies[enemies.length - 1];
+    if (enemy) {
+      enemy.forest = false;
+      enemy.voidIsland = false;
+      enemy.isIsland4 = true;
+      enemy.maxHp = Math.max(1, Math.round(enemy.maxHp * 1.10));
+      enemy.hp = enemy.maxHp;
+      enemy.damage = Math.max(1, Math.round((enemy.damage || 10) * 1.10));
+    }
+
+    return enemy;
+  };
+
+  // Đảo 4 nhận 5000% EXP của Đảo 3 = x50.
+  const gainExpBase = gainExp;
+  gainExp = function(amount) {
+    const multiplier =
+      currentIsland === ISLAND4_ID && currentDimension === "world" ? 50 : 1;
+    return gainExpBase(Math.round(amount * multiplier));
+  };
+
+  // Giao diện/HUD riêng cho Đảo 4.
+  const updateHudBase = updateHUD;
+  updateHUD = function() {
+    updateHudBase();
+
+    const progress = progressSafe();
+    const level = Number(progress.level) || 1;
     const button = document.getElementById("boatGoIsland4");
-    if (!button) return;
 
-    const progress = getProgressSafe();
-    const level = Number(progress.level) || 1;
-    const unlocked = level >= ISLAND4_LEVEL;
-
-    button.classList.toggle("locked", !unlocked);
-    button.innerHTML = unlocked
-      ? `${ISLAND4_NAME}<small>Đã mở khóa · nhấn để đi</small>`
-      : `Đảo 4 — ???<small>Yêu cầu Level ${ISLAND4_LEVEL} để mở khóa</small>`;
-
-    const desc = document.getElementById("nexx8nIslandDescription");
-    if (desc) {
-      desc.textContent = unlocked
-        ? "Đảo 4 đã mở khóa. Bạn có thể chọn để đi."
-        : `Đảo 4 đang bị khóa. Cần Level ${ISLAND4_LEVEL}.`;
+    if (button) {
+      const unlocked = level >= ISLAND4_LEVEL;
+      button.classList.toggle("locked", !unlocked);
+      button.innerHTML = unlocked
+        ? `${ISLAND4_NAME}<small>Lv.60+ · Quái/Boss +10% HP & damage · EXP x50</small>`
+        : `Đảo 4 — ???<small>Yêu cầu Level ${ISLAND4_LEVEL}</small>`;
     }
-  }
 
-  function blockLockedIsland4(event) {
-    const progress = getProgressSafe();
+    if (currentIsland === ISLAND4_ID) {
+      islandText.textContent = ISLAND4_NAME;
+      islandHint.textContent =
+        "Dùng quái và boss Đảo 3 · +10% HP & damage · EXP x50";
+      if (typeof itemIsland !== "undefined" && itemIsland) {
+        itemIsland.textContent = ISLAND4_NAME;
+      }
+    }
+
+    removeIsland5Plus();
+  };
+
+  function travelToIsland4(event) {
+    event?.preventDefault();
+    event?.stopImmediatePropagation();
+
+    const modal = document.getElementById("boatNpcModal");
+    if (!modal?.classList.contains("show")) {
+      notify("Hãy tới NPC nexx8n để chọn đảo");
+      return;
+    }
+
+    const progress = progressSafe();
     const level = Number(progress.level) || 1;
 
-    if (level >= ISLAND4_LEVEL) return;
+    if (level < ISLAND4_LEVEL) {
+      notify(`Chưa đủ Level! Cần Level ${ISLAND4_LEVEL} để qua Đảo 4.`);
+      updateHUD();
+      return;
+    }
 
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    showMsg(`Chưa đủ Level! Cần Level ${ISLAND4_LEVEL} để qua Đảo 4.`);
-    refreshIsland4Button();
+    modal.classList.remove("show");
+    currentDimension = "world";
+    if (typeof setDimension === "function") setDimension("world");
+
+    progress.island = ISLAND4_ID;
+    saveProgress(progress);
+    currentIsland = ISLAND4_ID;
+
+    enemies.length = 0;
+    projectiles.length = 0;
+    effects.length = 0;
+
+    resetArena();
+
+    playerObj.x = 120;
+    playerObj.y = canvas.height / 2;
+    playerObj.hp = playerObj.maxHp;
+
+    updateHUD();
+    notify("Đã tới " + ISLAND4_NAME);
   }
 
-  function installPatch() {
+  function installIsland4Button() {
     removeIsland5Plus();
 
     const oldButton = document.getElementById("boatGoIsland4");
-    if (oldButton && !oldButton.dataset.levelLockInstalled) {
-      oldButton.dataset.levelLockInstalled = "1";
-      oldButton.addEventListener("click", blockLockedIsland4, true);
-    }
+    if (!oldButton) return;
 
-    refreshIsland4Button();
+    // Xóa toàn bộ listener đảo 4 cũ gây xung đột.
+    const cleanButton = oldButton.cloneNode(true);
+    oldButton.replaceWith(cleanButton);
+    cleanButton.addEventListener("click", travelToIsland4, true);
 
-    const modal = document.getElementById("boatNpcModal");
-    if (modal) {
-      const observer = new MutationObserver(() => {
-        removeIsland5Plus();
-        if (modal.classList.contains("show")) refreshIsland4Button();
-      });
-      observer.observe(modal, {
-        attributes: true,
-        childList: true,
-        subtree: true,
-        attributeFilter: ["class"]
-      });
-    }
-
-    // Cập nhật trạng thái khóa định kỳ để hiện ngay khi vừa lên Level 60.
-    setInterval(refreshIsland4Button, 1000);
+    updateHUD();
   }
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", installPatch, { once: true });
+    document.addEventListener("DOMContentLoaded", installIsland4Button, { once: true });
   } else {
-    installPatch();
+    installIsland4Button();
   }
 
-  window.refreshIsland4Button = refreshIsland4Button;
+  setInterval(() => {
+    removeIsland5Plus();
+    if (document.getElementById("boatNpcModal")?.classList.contains("show")) {
+      updateHUD();
+    }
+  }, 1000);
 })();
 </script>
 
