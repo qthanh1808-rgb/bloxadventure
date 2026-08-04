@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>BloxAdventure - Demo chơi</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Arial; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; margin:0; background:#111; color:#eee }
+    h1 { margin:16px 0 8px }
+    #game { background:#222; border:6px solid #333; box-shadow:0 8px 30px rgba(0,0,0,0.6) }
+    .controls { margin-top:12px; color:#bbb }
+    button { padding:8px 12px; font-size:14px }
+    a.notice { color:#9cf; margin-top:10px }
+  </style>
+</head>
+<body>
+  <h1>BloxAdventure — Demo chơi</h1>
+  <canvas id="game" width="480" height="360"></canvas>
+  <div class="controls">Dùng các phím ← ↑ → ↓ để điều khiển. Nhấn Space để dừng/tiếp tục.</div>
+  <div style="margin-top:10px">
+    <button id="restart">Bắt đầu lại</button>
+  </div>
+  <a class="notice" href="https://github.com/qthanh1808-rgb/bloxadventure" target="_blank">Mở repo trên GitHub</a>
+
+<script>
+(() => {
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  // simple player block
+  const player = { x:40, y:H/2-12, w:24, h:24, vx:0, vy:0 };
+  const speed = 2.6;
+  let paused = false;
+  let score = 0;
+  const blocks = [];
+  let tick = 0;
+
+  function spawnBlock(){
+    const h = 24 + Math.random()*60;
+    const y = Math.random()*(H-h-10)+5;
+    blocks.push({ x:W+10, y, w:24+Math.random()*36, h, vx:-2 - Math.random()*1.4 });
+  }
+
+  function reset(){
+    player.x = 40; player.y = H/2-12; player.vx=0; player.vy=0;
+    blocks.length = 0; score = 0; tick=0; paused=false;
+  }
+
+  document.getElementById('restart').addEventListener('click', reset);
+
+  const keys = {};
+  window.addEventListener('keydown', e=>{
+    keys[e.key] = true;
+    if(e.code === 'Space') { paused = !paused; e.preventDefault(); }
+  });
+  window.addEventListener('keyup', e=>{ keys[e.key]=false; });
+
+  function update(){
+    if(paused) return;
+    tick++;
+    // controls
+    if(keys['ArrowLeft'] || keys['a']) player.x -= speed;
+    if(keys['ArrowRight'] || keys['d']) player.x += speed;
+    if(keys['ArrowUp'] || keys['w']) player.y -= speed;
+    if(keys['ArrowDown'] || keys['s']) player.y += speed;
+
+    // bounds
+    player.x = Math.max(0, Math.min(W-player.w, player.x));
+    player.y = Math.max(0, Math.min(H-player.h, player.y));
+
+    // spawn
+    if(tick % 90 === 0) spawnBlock();
+
+    // move blocks
+    for(let i=blocks.length-1;i>=0;i--){
+      const b = blocks[i]; b.x += b.vx;
+      if(b.x + b.w < 0) { blocks.splice(i,1); score++; }
+    }
+
+    // collisions
+    for(const b of blocks){
+      if(rectIntersect(player, b)) { paused = true; }
+    }
+  }
+
+  function rectIntersect(a,b){
+    return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    // background grid
+    ctx.fillStyle = '#0f1113';
+    ctx.fillRect(0,0,W,H);
+
+    // player
+    ctx.fillStyle = '#5ce1ff';
+    roundRect(ctx, player.x, player.y, player.w, player.h, 4, true);
+
+    // blocks
+    for(const b of blocks){
+      ctx.fillStyle = '#ff7b7b';
+      roundRect(ctx, b.x, b.y, b.w, b.h, 6, true);
+    }
+
+    // score
+    ctx.fillStyle = '#cfefff';
+    ctx.font = '16px system-ui, Arial';
+    ctx.fillText('Score: ' + score + (paused ? '  (PAUSED)' : ''), 10, 20);
+  }
+
+  function loop(){ update(); draw(); requestAnimationFrame(loop); }
+  loop();
+
+  // helpers
+  function roundRect(ctx, x, y, w, h, r, fill){
+    ctx.beginPath();
+    ctx.moveTo(x+r, y);
+    ctx.arcTo(x+w, y, x+w, y+h, r);
+    ctx.arcTo(x+w, y+h, x, y+h, r);
+    ctx.arcTo(x, y+h, x, y, r);
+    ctx.arcTo(x, y, x+w, y, r);
+    ctx.closePath();
+    if(fill) ctx.fill(); else ctx.stroke();
+  }
+
+})();
+</script>
+</body>
+</html>
